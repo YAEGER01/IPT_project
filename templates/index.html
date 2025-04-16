@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Tracker Attendance</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo/logoplate.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="h1">Welcome</h1>
+        <p class="p">Please choose an option below to continue:</p>
+        <a class="link" href="{{ url_for('login') }}"><button class="btn">Login</button></a>
+        <a class="link" href="{{ url_for('signup') }}"><button class="btn">Signup</button></a>
+    </div>
+</body>
+
+</html>

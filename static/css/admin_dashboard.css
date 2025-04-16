@@ -1,0 +1,327 @@
+/* Basic reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    padding: 20px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.sidebar h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 24px;
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    margin: 20px 0;
+}
+
+.sidebar ul li a {
+    color: #ecf0f1;
+    text-decoration: none;
+    font-size: 18px;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.sidebar ul li a:hover {
+    background-color: #34495e;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    margin-left: 270px;
+}
+
+header {
+    background-color: #3498db;
+    color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 28px;
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.user-management {
+    display: flex;
+    gap: 20px;
+}
+
+.add-user,
+.delete-user,
+.change-password {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 5px;
+    flex: 1;
+}
+
+.add-btn,
+.delete-btn,
+.report-btn,
+.settings-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-btn:hover,
+.delete-btn:hover,
+.report-btn:hover,
+.settings-btn:hover {
+    background-color: #2980b9;
+}
+
+.delete-input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding-top: 100px;
+    transition: all 0.3s ease;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 60%;
+    max-width: 700px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: modalAnimation 0.3s ease-in-out;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Add Instructor and Change Password Form Styling */
+.add-instructor-form input,
+.change-password-form input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.add-instructor-form button,
+.change-password-form button {
+    padding: 12px;
+    width: 100%;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-instructor-form button:hover,
+.change-password-form button:hover {
+    background-color: #2980b9;
+}
+
+/* List Section Styling */
+.list-section {
+    margin-top: 20px;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.refresh-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #3ce780;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.refresh-btn:hover {
+    background-color: #2ecc71;
+}
+
+.list-items {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: scroll;
+}
+
+.list-items ul {
+    list-style: none;
+}
+
+.list-items ul li {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
+}
+
+.list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.list-table th,
+.list-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.list-table th {
+    background-color: #3498db;
+    color: white;
+}
+
+.list-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.delete-user {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 5px;
+    flex: 1;
+}
+
+.delete-user h3 {
+    margin-bottom: 15px;
+}
+
+.delete-user form input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.delete-user form button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.delete-user form button:hover {
+    background-color: #2980b9;
+}
+
+/* Live Counts Section */
+.live-counts {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.live-count-box {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 5px;
+    flex: 1;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.live-count-box h3 {
+    color: #3498db;
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.live-count-box p {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2c3e50;
+}

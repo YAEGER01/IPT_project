@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Dashboard</title>
+
+    <!-- FOR AREA NG MGA CSS DESIGNS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <!-- FOR AREA NG MGA SCRIPTS NG PROJECT -->
+    <script src="script.js" defer></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="dashboard">
+            <aside class="sidebar">
+                <h2>&nbsp;Attendance System</h2>
+                <div class="profile-sidebar">
+                    <div class="profile-icon-sidebar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-name-sidebar">
+                        Student </div>
+                </div>
+                <button class="active"><i class="fa fa-bars"></i><span>Dashboard</span></button>
+                <button><i class="fas fa-user"></i><span>Edit Info</span></button>
+                <form action="{{ url_for('logout') }}" method="POST" onsubmit="return confirmLogout();">
+                    <button type="submit"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+                </form>
+            </aside>
+            <main class="main-content">
+                <div class="welcome-header">
+                    <div class="welcome-container">
+                        <h2>Welcome {{ student_name }} ({{ student_id }})</h2>
+                    </div>
+                </div>
+
+                <div class="datetime-container">
+                    <h3 id="current-time">Date & Time: 4/5/2025 09:42:58</h3>
+                </div>
+
+                <div class="status-box">
+                    <span class="status on-time">On Time</span>
+                    <span class="status late">Late/Missed</span>
+                    <span class="status status-upcoming">Subjects</span>
+                </div>
+
+                <div class="subject-container">
+                    <div class="subject">Information Management | IT 221 | 10:00AM - 1:00PM</div>
+                    <div class="subject">Networking 1 | IT 222 | 8:00AM - 10:00 AM</div>
+                    <!---- <div class="subject late-subject">PE 4 </div> --> <!-- may red ito-->
+                    <!-- <div class="subject subject-green">English [1:00 PM]</div> --> <!-- may green naman ito -->
+                    <div class="subject">English [1:00 PM]</div>
+                    <div class="subject">English [1:00 PM]</div>
+                    <div class="subject">English [1:00 PM]</div>
+                </div>
+            </main>
+            <div class="right-container">
+                <h3>STUDENT LIST</h3>
+                <p>List of students who's already in attendance</p>
+                <p>[CURRENT SUBJECT]</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to get time from the Flask backend
+        function updateDateTime() {
+            fetch('/get-time')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('current-time').textContent = "Date & Time: " + data.time;
+                })
+                .catch(error => console.error('Error fetching time:', error));
+        }
+
+        // Initial call and set interval to update every second
+        updateDateTime();
+        setInterval(updateDateTime, 1000); // Update every second
+    </script>
+
+    <script>
+        function confirmLogout() {
+            return confirm("Are you sure you want to logout?");
+        }
+    </script>
+</body>
+
+</html>

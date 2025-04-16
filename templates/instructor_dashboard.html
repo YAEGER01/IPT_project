@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dashboard.css') }}">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>Instructor Dashboard</h1>
+        </header>
+
+        <div class="instructor-info">
+            <h2>Instructor Details</h2>
+            <p><strong>Name:</strong> {{ instructor.name }}</p>
+            <p><strong>Instructor ID:</strong> {{ instructor.instructor_id }}</p>
+            <p><strong>Subject:</strong> {{ instructor.subject }}</p>
+            <p><strong>Note:</strong>&nbsp;Instructor ID is used for logging in the system.</p>
+
+        </div>
+
+        <div class="student-table">
+            <h2>Student List per Section</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Section</th>
+                        <th>Attendance Request</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>001</td>
+                        <td>Alice Smith</td>
+                        <td>A</td>
+                        <td>Requested</td>
+                        <td>
+                            <button class="accept-btn">Accept</button>
+                            <button class="refuse-btn">Refuse</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>002</td>
+                        <td>Bob Johnson</td>
+                        <td>A</td>
+                        <td>Requested</td>
+                        <td>
+                            <button class="accept-btn">Accept</button>
+                            <button class="refuse-btn">Refuse</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>003</td>
+                        <td>Charlie Brown</td>
+                        <td>B</td>
+                        <td>Requested</td>
+                        <td>
+                            <button class="accept-btn">Accept</button>
+                            <button class="refuse-btn">Refuse</button>
+                        </td>
+                    </tr>
+                    <!-- More students can be added here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="logout-btn-container">
+            <form action="/logout" method="POST" onsubmit="return confirmLogout();">
+                <button type="submit" class="logout-btn">Logout</button>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        function confirmLogout() {
+            return confirm("Are you sure you want to logout?");
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Student Attendance Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Admin Dashboard</h2>
+        <ul>
+            <li><a href="#manage-users">Manage Users</a></li>
+            <li><a href="#" id="generateReportsBtn">LISTS</a></li>
+            <li>
+                <form action="{{ url_for('logout') }}" method="POST" onsubmit="return confirmLogout();">
+                    <button type="submit"
+                        style="background: none; border: none; color: #ecf0f1; padding: 10px; font-size: 18px; cursor: pointer; display: block; width: 100%; text-align: left;">
+                        LOGOUT
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h1>Welcome, {{ admin_name }}</h1>
+        </header>
+        <center>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div style="color: green; font-weight: bold;">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </center>
+        <section id="manage-users" class="section">
+            <h2>Manage Users</h2>
+            <div class="user-management">
+                <!-- Add New Instructor Section -->
+                <div class="add-user">
+                    <h3>Add New Instructor</h3>
+                    <button class="add-btn" id="addInstructorBtn">Add Instructor</button>
+                </div>
+                <div class="delete-user">
+                    <h3>Delete User</h3>
+                    <form action="{{ url_for('delete_user') }}" method="POST">
+                        <input type="text" name="school_id" placeholder="Enter School ID to delete">
+                        <button type="submit">Delete User</button>
+                    </form>
+                </div>
+                <div class="change-password" style="display:none;">
+                    <button class="settings-btn" id="changePasswordBtn">Change Password</button>
+                </div>
+
+            </div>
+            <section id="live-counts" class="section">
+                <br><br>
+                <h2>Total Counts</h2>
+                <div class="live-counts">
+                    <div class="live-count-box">
+                        <h3>Admins</h3>
+                        <p id="adminCount">{{ admin_count }}</p>
+                    </div>
+                    <div class="live-count-box">
+                        <h3>Students</h3>
+                        <p id="studentCount">{{ student_count }}</p>
+                    </div>
+                    <div class="live-count-box">
+                        <h3>Instructors</h3>
+                        <p id="instructorCount">{{ instructor_count }}</p>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </div>
+
+    <!-- Add New Instructor Modal -->
+    <div id="addInstructorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAddInstructorModal">&times;</span>
+            <h2>Add New Instructor</h2>
+
+            <!-- Add Instructor Form -->
+            <!-- Add Instructor Form -->
+            <form class="add-instructor-form" method="POST" action="/admin/add_instructor">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div style="color: green; font-weight: bold;">{{ message }}</div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+                <input type="text" name="instructor_name" placeholder="Instructor Name" required>
+                <input type="text" name="instructor_id" placeholder="Instructor ID" required>
+                <input type="text" name="instructor_subject" placeholder="Instructor Subject" required>
+                <!-- Password input field -->
+                <input type="password" name="instructor_password" placeholder="Instructor Password" required>
+
+                <!-- Add school_id field -->
+                <input type="text" name="school_id" placeholder="School ID" required> <!-- This is the missing field -->
+
+                <br><br>
+                <button type="submit">Add Instructor</button>
+            </form>
+
+
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeChangePasswordModal">&times;</span>
+            <h2>Change Password</h2>
+
+            <!-- Change Password Form -->
+            <form class="change-password-form" method="POST" action="/admin/change_password">
+                <input type="text" name="instructor_id" placeholder="Instructor ID" required>
+                <input type="password" name="new_password" placeholder="New Password" required>
+                <br><br>
+                <button type="submit">Change Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LISTS Modal -->
+    <div id="listsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeListsModal">&times;</span>
+            <h2>Student and Instructor Lists</h2>
+
+            <!-- Search Bar -->
+            <input type="text" class="search-bar" id="searchBar" placeholder="Search Instructors/Students">
+
+            <!-- Refresh Button -->
+            <button class="refresh-btn" id="refreshListBtn">Refresh List</button>
+
+            <div class="list-items">
+                <h3>Instructors LIST</h3>
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Instructor Name</th>
+                            <th>Email / School ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="instructorList">
+                        {% for instructor in instructors %}
+                        <tr>
+                            <td>{{ instructor.full_name }}</td>
+                            <td>{{ instructor.email }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3>Students LIST</h3>
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email / School ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentList">
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.full_name }}</td>
+                            <td>{{ student.email }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/functionadmin.js') }}"></script>
+
+    <script>
+        function confirmLogout() {
+            return confirm("Are you sure you want to logout?");
+        }
+    </script>
+
+</body>
+
+</html>

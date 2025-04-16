@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login |</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h2> STUDENT TRACKER ATTENDANCE SYSTEM</h2>
+        <!-- Error message area -->
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        <form action="{{ url_for('login') }}" method="POST">
+            <label for="school_id">School ID / Instructor ID</label>
+            <input type="text" id="school_id" name="school_id" placeholder="Enter your School ID / Instructor ID"
+                required />
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required />
+
+            <button class="btn" type="submit">Login</button>
+
+            <div class="form-footer">
+                <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

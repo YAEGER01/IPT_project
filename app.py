@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, redirect, url_for, request, session, flash
-import pymysql
-from werkzeug.security import generate_password_hash, check_password_hash
+import pymysql # type: ignore
+from werkzeug.security import generate_password_hash
 from datetime import datetime
 import pytz
 import os
