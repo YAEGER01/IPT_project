@@ -10,13 +10,13 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # Set a secret key to manage sessions securely
-app.secret_key = ''  # Replace with a secure key in production
+app.secret_key = '58d42ebe7b14e902ad8f54aa5adcd79d313dfa9d4c671b7f3986fbfad57675b7'  # Replace with a secure key in production
 
 # Database connection details
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': '',  # Replace with your MariaDB password
+    'password': 'sulasok_tv',  # Replace with your MariaDB password
     'database': 'attendance_tracker',
 }
 
