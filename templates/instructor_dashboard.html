@@ -12,8 +12,12 @@
     <div class="dashboard-container">
         <header>
             <h1>Instructor Dashboard</h1>
+            <div class="logout-btn-container">
+                <form action="/logout" method="POST" onsubmit="return confirmLogout();">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
         </header>
-
         <div class="instructor-info">
             <h2>Instructor Details</h2>
             <p><strong>Name:</strong> {{ instructor.name }}</p>
@@ -24,7 +28,7 @@
         </div>
 
         <div class="student-table">
-            <h2>Student List per Section</h2>
+            <h2>Student List</h2>
             <table>
                 <thead>
                     <tr>
@@ -66,14 +70,9 @@
                             <button class="refuse-btn">Refuse</button>
                         </td>
                     </tr>
-                    <!-- More students can be added here -->
+
                 </tbody>
             </table>
-        </div>
-        <div class="logout-btn-container">
-            <form action="/logout" method="POST" onsubmit="return confirmLogout();">
-                <button type="submit" class="logout-btn">Logout</button>
-            </form>
         </div>
     </div>
     </div>

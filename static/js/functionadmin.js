@@ -1,23 +1,23 @@
-// Refresh the instructor and student lists using AJAX
+
 $('#refreshListBtn').click(function (event) {
-    event.preventDefault();  // Prevent the form from submitting normally
+    event.preventDefault();
 
     $.ajax({
         url: "{{ url_for('admin_dashboard') }}",  // URL to refresh the dashboard content
         type: "GET",
         success: function (response) {
-            // Replace the current content in the modal lists with the new data
+
             $('#instructorList').html(response.instructors_html);
             $('#studentList').html(response.students_html);
 
-            // Rebind the search functionality after refreshing the list
+
             const instructorRows = document.querySelectorAll("#instructorList tr");
             const studentRows = document.querySelectorAll("#studentList tr");
 
             searchBar.addEventListener("input", function () {
                 const filter = searchBar.value.toLowerCase();
 
-                // Filter Instructor List
+
                 instructorRows.forEach(row => {
                     const name = row.cells[0]?.textContent.toLowerCase();
                     const email = row.cells[1]?.textContent.toLowerCase();
@@ -28,7 +28,7 @@ $('#refreshListBtn').click(function (event) {
                     }
                 });
 
-                // Filter Student List
+
                 studentRows.forEach(row => {
                     const name = row.cells[0]?.textContent.toLowerCase();
                     const email = row.cells[1]?.textContent.toLowerCase();
@@ -46,7 +46,7 @@ $('#refreshListBtn').click(function (event) {
     });
 });
 
-// Modal show/hide functionality
+
 const addInstructorModal = document.getElementById("addInstructorModal");
 const listsModal = document.getElementById("listsModal");
 const closeAddInstructorModal = document.getElementById("closeAddInstructorModal");
@@ -56,24 +56,24 @@ const addInstructorBtn = document.getElementById("addInstructorBtn");
 const changePasswordBtn = document.getElementById("changePasswordBtn");
 const generateReportsBtn = document.getElementById("generateReportsBtn");
 
-// Show modals
+
 addInstructorBtn.onclick = function () { addInstructorModal.style.display = "block"; }
 changePasswordBtn.onclick = function () { changePasswordModal.style.display = "block"; }
 generateReportsBtn.onclick = function () { listsModal.style.display = "block"; }
 
-// Close modals
+
 closeAddInstructorModal.onclick = function () { addInstructorModal.style.display = "none"; }
 closeChangePasswordModal.onclick = function () { changePasswordModal.style.display = "none"; }
 closeListsModal.onclick = function () { listsModal.style.display = "none"; }
 
-// Close modals if clicked outside
+
 window.onclick = function (event) {
     if (event.target === addInstructorModal) { addInstructorModal.style.display = "none"; }
     if (event.target === changePasswordModal) { changePasswordModal.style.display = "none"; }
     if (event.target === listsModal) { listsModal.style.display = "none"; }
 }
 
-// Search filter functionality
+
 const searchBar = document.getElementById("searchBar");
 const instructorRows = document.querySelectorAll("#instructorList tr");
 const studentRows = document.querySelectorAll("#studentList tr");
@@ -81,7 +81,7 @@ const studentRows = document.querySelectorAll("#studentList tr");
 searchBar.addEventListener("input", function () {
     const filter = searchBar.value.toLowerCase();
 
-    // Filter Instructor List
+
     instructorRows.forEach(row => {
         const name = row.cells[0]?.textContent.toLowerCase();
         const email = row.cells[1]?.textContent.toLowerCase();
@@ -92,7 +92,7 @@ searchBar.addEventListener("input", function () {
         }
     });
 
-    // Filter Student List
+
     studentRows.forEach(row => {
         const name = row.cells[0]?.textContent.toLowerCase();
         const email = row.cells[1]?.textContent.toLowerCase();
@@ -104,7 +104,7 @@ searchBar.addEventListener("input", function () {
     });
 });
 
-// Open instructor modal with data
+
 function openInstructorModal(instructorId, fullName, email) {
     document.getElementById('instructor_id').textContent = instructorId;
     document.getElementById('instructor_full_name').textContent = fullName;
@@ -112,7 +112,7 @@ function openInstructorModal(instructorId, fullName, email) {
     new bootstrap.Modal(document.getElementById('instructorModal')).show();
 }
 
-// Delete user functionality
+
 document.querySelector('.delete-btn').addEventListener('click', () => {
     const userId = document.querySelector('.delete-input').value.trim();
 
@@ -125,7 +125,7 @@ document.querySelector('.delete-btn').addEventListener('click', () => {
         return;
     }
 
-    // Send AJAX request to backend to delete the user
+
     fetch('/delete_user', {
         method: 'POST',
         headers: {
@@ -138,7 +138,7 @@ document.querySelector('.delete-btn').addEventListener('click', () => {
             alert(data.message);
             if (data.status === 'success') {
                 document.querySelector('.delete-input').value = '';
-                // Optionally refresh the page or update the UI
+
             }
         })
         .catch(error => {
@@ -147,7 +147,7 @@ document.querySelector('.delete-btn').addEventListener('click', () => {
         });
 });
 
-// Open lists modal
+
 $(document).on('click', '#generateReportsBtn', function () {
     $('#listsModal').show();
 });
@@ -161,7 +161,7 @@ function updateCounts() {
     })
         .then(response => response.json())
         .then(data => {
-            // Update the live counts on the page with the new values
+
             document.getElementById('instructorCount').textContent = data.instructor_count;
             document.getElementById('studentCount').textContent = data.student_count;
             document.getElementById('adminCount').textContent = data.admin_count;
@@ -173,7 +173,7 @@ function updateCounts() {
 setInterval(updateCounts, 5000);
 
 function fetchLiveCounts() {
-    // Send an AJAX request to get the updated counts and lists
+
     $.ajax({
         url: '{{ url_for("admin_dashboard") }}',
         type: 'GET',
@@ -185,11 +185,11 @@ function fetchLiveCounts() {
             $('#admin_count').text(data.admin_count);
 
             // Update the instructors and students lists
-            $('#instructors_list').html(data.instructors_html);
-            $('#students_list').html(data.students_html);
+            $('#instructors_list').html(data.instructor_list_html);
+            $('#students_list').html(data.student_list_html);
         }
     });
 }
 
-// Set an interval to refresh the live counts every few seconds
+
 setInterval(fetchLiveCounts, 5000); // Refresh every 5 seconds

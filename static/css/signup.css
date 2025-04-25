@@ -36,16 +36,16 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
 
-    /* Hide scrollbar but keep scroll functionality */
+
     scrollbar-width: none;
-    /* Firefox */
+
     -ms-overflow-style: none;
-    /* Internet Explorer 10+ */
+
 }
 
 .container::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari, Opera */
+
 }
 
 h2,
@@ -158,4 +158,29 @@ input[type="file"] {
 .error {
     color: red;
     margin-bottom: 20px;
+}
+
+
+.password-container {
+    position: relative;
+}
+
+.password-container input {
+    width: 100%;
+    padding-right: 40px;
+}
+
+.password-container .toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #333;
+    font-size: 18px;
+    transition: color 0.3s;
+}
+
+.password-container .toggle-password:hover {
+    color: #ff6700;
 }

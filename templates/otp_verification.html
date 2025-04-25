@@ -1,0 +1,21 @@
+<!-- templates/otp_verification.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Verify OTP</title>
+</head>
+
+<body>
+    <h2>Enter the OTP sent to your email</h2>
+    {% if error %}
+    <p style="color:red;">{{ error }}</p>
+    {% endif %}
+    <form method="POST">
+        <label for="otp">OTP:</label>
+        <input type="text" name="otp" required>
+        <button type="submit">Verify</button>
+    </form>
+</body>
+
+</html>

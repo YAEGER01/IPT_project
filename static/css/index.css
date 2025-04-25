@@ -14,7 +14,7 @@ body {
     justify-content: center;
     min-height: 100vh;
 
-    /* New Animated Background */
+
     background:
         radial-gradient(circle, transparent 20%, #2a2a2a 20%, #2a2a2a 80%, transparent 80%, transparent) 0% 0% / 46px 46px,
         radial-gradient(circle, transparent 20%, #2a2a2a 20%, #2a2a2a 80%, transparent 80%, transparent) 23px 23px / 46px 46px,
@@ -26,7 +26,7 @@ body {
 }
 
 
-/* Keyframes for Diagonal Scrolling */
+
 @keyframes scroll-diagonal {
     0% {
         background-position: 0 0;
@@ -37,7 +37,7 @@ body {
     }
 }
 
-/* Keyframe Animations */
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -76,7 +76,7 @@ body {
 
 
 
-/* Keyframes for background scrolling */
+
 @keyframes scrollPattern {
     0% {
         background-position: 0 0, 20px 20px, 0px 0px, 0px 0px;
@@ -87,7 +87,7 @@ body {
     }
 }
 
-/* Containers */
+
 .container {
     display: flex;
     flex-direction: column;
@@ -103,7 +103,7 @@ body {
     background-color: #020213;
 }
 
-/* Headings */
+
 h1 {
     color: #ffffff;
     margin-bottom: 20px;
@@ -112,7 +112,7 @@ h1 {
     animation: slideIn 1s ease-out;
 }
 
-/* Paragraphs */
+
 p {
     font-size: 1em;
     font-weight: 500;
@@ -121,7 +121,7 @@ p {
     animation: fadeIn 1.5s ease-out;
 }
 
-/* Button Styles with Animation */
+
 .btn {
     padding: 0.5em 2em;
     background: none;
@@ -167,7 +167,7 @@ p {
 }
 
 
-/* Additional Link Styling */
+
 .link {
     color: #333;
     transition: color 0.3s ease;
@@ -180,7 +180,7 @@ p {
     color: #ffeba7;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
     .container {
         padding: 30px 20px;

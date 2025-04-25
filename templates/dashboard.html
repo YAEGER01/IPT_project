@@ -10,13 +10,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
-    <!-- FOR AREA NG MGA SCRIPTS NG PROJECT -->
-    <script src="script.js" defer></script>
 
+    <!-- FOR AREA NG MGA SCRIPTS NG PROJECT -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
     <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
         <div class="dashboard">
             <aside class="sidebar">
                 <h2>&nbsp;Attendance System</h2>
@@ -28,7 +38,7 @@
                         Student </div>
                 </div>
                 <button class="active"><i class="fa fa-bars"></i><span>Dashboard</span></button>
-                <button><i class="fas fa-user"></i><span>Edit Info</span></button>
+                <button id="editProfileBtn"><i class="fas fa-user-edit"></i><span>Edit Profile</span></button>
                 <form action="{{ url_for('logout') }}" method="POST" onsubmit="return confirmLogout();">
                     <button type="submit"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
                 </form>
@@ -47,29 +57,83 @@
                 <div class="status-box">
                     <span class="status on-time">On Time</span>
                     <span class="status late">Late/Missed</span>
-                    <span class="status status-upcoming">Subjects</span>
+                    <span class="status status-upcoming" style="background-color: #f0ad4e;">Subjects</span>
                 </div>
 
                 <div class="subject-container">
-                    <div class="subject">Information Management | IT 221 | 10:00AM - 1:00PM</div>
-                    <div class="subject">Networking 1 | IT 222 | 8:00AM - 10:00 AM</div>
-                    <!---- <div class="subject late-subject">PE 4 </div> --> <!-- may red ito-->
-                    <!-- <div class="subject subject-green">English [1:00 PM]</div> --> <!-- may green naman ito -->
-                    <div class="subject">English [1:00 PM]</div>
-                    <div class="subject">English [1:00 PM]</div>
-                    <div class="subject">English [1:00 PM]</div>
+                    {% if active_subjects %}
+                    {% for subject in active_subjects %}
+                    <button class="subject {{ subject.status }} 
+                                    {% if subject.attended_on_time %}attended-on-time{% endif %}"
+                        data-subject="{{ subject.subject_name }}" data-status="{{ subject.status }}" {% if
+                        subject.attended_on_time or subject.status=='late' or subject.status=='upcoming' %} disabled {%
+                        endif %}>
+                        {% if subject.attended_on_time %}
+                        Attendance Marked
+                        {% else %}
+                        {{ subject.subject_name }}
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                    {% else %}
+                    <div class="subject">No subjects currently available. Please check back later.</div>
+                    {% endif %}
                 </div>
+
             </main>
             <div class="right-container">
                 <h3>STUDENT LIST</h3>
-                <p>List of students who's already in attendance</p>
-                <p>[CURRENT SUBJECT]</p>
+                <p>{{ current_subject_name }}</p>
+
+                <ul id="studentList">
+                    {% if student_list %}
+                    {% for student_id in student_list %}
+                    <li>Student ID: {{ student_id }}</li>
+                    {% endfor %}
+                    {% else %}
+                    <li>No students have marked their attendance yet.</li>
+                    {% endif %}
+                </ul>
             </div>
+
+
+        </div>
+    </div>
+
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeEditModal">&times;</span>
+            <h2 class="modal-header">Edit Profile</h2>
+            <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
+
+                <div class="form-group">
+                    <label for="firstname">First Name:</label>
+                    <input type="text" name="firstname" id="firstname" value="{{ user.firstname }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastname">Last Name:</label>
+                    <input type="text" name="lastname" id="lastname" value="{{ user.lastname }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" name="email" id="email" value="{{ user.email }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">New Password:</label>
+                    <input type="password" name="password" id="password">
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password:</label>
+                    <input type="password" name="confirm_password" id="confirm_password">
+                </div>
+                <button type="submit" id="saveChangesBtn">Save Changes</button>
+                <p id="updateMessage" class="success-message" style="display: none;">Profile successfully updated!</p>
+            </form>
         </div>
     </div>
 
     <script>
-        // Function to get time from the Flask backend
+
         function updateDateTime() {
             fetch('/get-time')
                 .then(response => response.json())
@@ -79,10 +143,197 @@
                 .catch(error => console.error('Error fetching time:', error));
         }
 
-        // Initial call and set interval to update every second
         updateDateTime();
-        setInterval(updateDateTime, 1000); // Update every second
+        setInterval(updateDateTime, 1000);
+
     </script>
+
+
+    <script>
+        const editBtn = document.getElementById('editProfileBtn');
+        const editModal = document.getElementById('editProfileModal');
+        const closeModal = document.getElementById('closeEditModal');
+
+        editBtn.addEventListener('click', () => {
+            editModal.style.display = 'block';
+            storeOriginalFormData();
+        });
+
+        closeModal.addEventListener('click', () => {
+            editModal.style.display = 'none';
+            resetProfileForm();
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == editModal) {
+                editModal.style.display = 'none';
+                resetProfileForm();
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById("password");
+            const confirmInput = document.getElementById("confirm_password");
+            const saveBtn = document.querySelector("#editProfileModal button[type='submit']");
+
+            const showError = () => {
+                confirmInput.style.border = "2px solid red";
+                confirmInput.setCustomValidity("Passwords do not match.");
+            };
+
+            const clearError = () => {
+                confirmInput.style.border = "";
+                confirmInput.setCustomValidity("");
+            };
+
+            const validatePasswords = () => {
+                const password = passwordInput.value;
+                const confirm = confirmInput.value;
+
+                if (password || confirm) {
+                    if (password !== confirm) {
+                        showError();
+                        saveBtn.disabled = true;
+                    } else {
+                        clearError();
+                        saveBtn.disabled = false;
+                    }
+                } else {
+                    clearError();
+                    saveBtn.disabled = false;
+                }
+            };
+
+            passwordInput.addEventListener("input", validatePasswords);
+            confirmInput.addEventListener("input", validatePasswords);
+        });
+    </script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const alertBox = document.querySelector('.alert-success');
+            if (alertBox) {
+                setTimeout(() => {
+                    alertBox.style.transition = 'opacity 0.5s ease-out';
+                    alertBox.style.opacity = '0';
+                    setTimeout(() => alertBox.remove(), 500);
+                }, 3000);
+            }
+        });
+    </script>
+
+    <script>
+        document.getElementById('editProfileForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            fetch('/update_profile', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const msg = document.getElementById('updateMessage');
+                        msg.style.display = 'block';
+
+                        setTimeout(() => {
+                            msg.style.display = 'none';
+                            document.getElementById('editProfileModal').style.display = 'none';
+                        }, 2000);
+                    } else if (data.status === 'error') {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Update failed:', error));
+        });
+    </script>
+
+    <script>
+        function clearEditProfileForm() {
+            document.getElementById("password").value = "";
+            document.getElementById("confirm_password").value = "";
+            document.getElementById("password").style.border = "";
+            document.getElementById("confirm_password").style.border = "";
+            document.getElementById("confirm_password").setCustomValidity("");
+        }
+    </script>
+
+    <script>
+        let originalFormData = {};
+
+        function storeOriginalFormData() {
+            originalFormData = {
+                firstname: document.getElementById("firstname").value,
+                lastname: document.getElementById("lastname").value,
+                email: document.getElementById("email").value,
+            };
+        }
+
+        function resetProfileForm() {
+            document.getElementById("firstname").value = originalFormData.firstname;
+            document.getElementById("lastname").value = originalFormData.lastname;
+            document.getElementById("email").value = originalFormData.email;
+
+            document.getElementById("password").value = "";
+            document.getElementById("confirm_password").value = "";
+            document.getElementById("password").style.border = "";
+            document.getElementById("confirm_password").style.border = "";
+            document.getElementById("confirm_password").setCustomValidity("");
+        }
+    </script>
+    <script>
+        $(".subject").on("click", function (event) {
+            event.preventDefault();
+
+            if ($(this).is(':disabled')) {
+                alert("You cannot mark attendance for this subject.");
+                return;
+            }
+
+            var subject = $(this).data("subject");
+            var status = $(this).data("status");
+
+            if (status === 'late' || status === 'upcoming') {
+                alert("This class is either late or upcoming, so you cannot mark attendance.");
+                return;
+            }
+
+            if ($(this).hasClass('attended-on-time')) {
+                alert("You have already marked attendance for this subject.");
+                return;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "/mark_attendance",
+                contentType: "application/json",
+                data: JSON.stringify({ subject: subject }),
+                dataType: "json",
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function (response) {
+                    if (response.status === "success") {
+                        alert(response.message);
+                        $(".subject[data-subject='" + subject + "']").addClass('attended-on-time').prop("disabled", true);
+                    } else {
+                        alert('⚠️ Error: ' + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message || "Request failed or server error!";
+                    alert('⚠️ Error: ' + msg);
+                }
+            });
+        });
+
+    </script>
+
 
     <script>
         function confirmLogout() {

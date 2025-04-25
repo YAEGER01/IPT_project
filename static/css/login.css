@@ -102,9 +102,9 @@
      background-color: #d056ef;
      font-weight: bolder;
      box-shadow: 0 2px 0 2px #000;
-     width: 56%;
-     margin: 10px 0;
-     margin-left: 90px;
+     width: 100%;
+     max-width: 270px;
+     margin: 10px auto;
  }
 
  .btn:before {
@@ -153,13 +153,41 @@
      text-align: center;
  }
 
+
  @media (max-width: 768px) {
      .container {
          padding: 30px;
      }
 
      .btn {
-         padding: 12px;
-         margin-left: 80px;
+         width: 100%;
+         max-width: none;
+         margin-left: 0;
      }
+ }
+
+ .password-wrapper {
+     position: relative;
+     width: 100%;
+ }
+
+ .password-wrapper input[type="password"],
+ .password-wrapper input[type="text"] {
+     padding-right: 44px;
+ }
+
+ .eye-icon {
+     position: absolute;
+     top: 43%;
+     right: 12px;
+     transform: translateY(-50%);
+     width: 24px;
+     height: 24px;
+     cursor: pointer;
+     color: #333;
+     transition: color 0.3s ease;
+ }
+
+ .eye-icon:hover {
+     color: #d056ef;
  }

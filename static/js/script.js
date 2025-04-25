@@ -1,4 +1,3 @@
-// Function to get time from the Flask backend
 function updateDateTime() {
     fetch('/get-time')
         .then(response => response.json())
@@ -8,6 +7,6 @@ function updateDateTime() {
         .catch(error => console.error('Error fetching time:', error));
 }
 
-// Initial call and set interval to update every second
+
 updateDateTime();
 setInterval(updateDateTime, 1000);

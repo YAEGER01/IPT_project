@@ -7,6 +7,8 @@
     <title>Admin Dashboard - Student Attendance Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 
 
 </head>
@@ -15,7 +17,6 @@
     <div class="sidebar">
         <h2>Admin Dashboard</h2>
         <ul>
-            <li><a href="#manage-users">Manage Users</a></li>
             <li><a href="#" id="generateReportsBtn">LISTS</a></li>
             <li>
                 <form action="{{ url_for('logout') }}" method="POST" onsubmit="return confirmLogout();">
@@ -44,7 +45,7 @@
         <section id="manage-users" class="section">
             <h2>Manage Users</h2>
             <div class="user-management">
-                <!-- Add New Instructor Section -->
+                <!-- Add New Instructor Section itong part na to -->
                 <div class="add-user">
                     <h3>Add New Instructor</h3>
                     <button class="add-btn" id="addInstructorBtn">Add Instructor</button>
@@ -82,30 +83,26 @@
         </section>
     </div>
 
-    <!-- Add New Instructor Modal -->
+    <!-- Add New Instructor Modal Ang Part Na Ito -->
     <div id="addInstructorModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeAddInstructorModal">&times;</span>
             <h2>Add New Instructor</h2>
 
-            <!-- Add Instructor Form -->
-            <!-- Add Instructor Form -->
             <form class="add-instructor-form" method="POST" action="/admin/add_instructor">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                {% for category, message in messages %}
-                <div style="color: green; font-weight: bold;">{{ message }}</div>
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
                 <input type="text" name="instructor_name" placeholder="Instructor Name" required>
                 <input type="text" name="instructor_id" placeholder="Instructor ID" required>
                 <input type="text" name="instructor_subject" placeholder="Instructor Subject" required>
-                <!-- Password input field -->
-                <input type="password" name="instructor_password" placeholder="Instructor Password" required>
+                <div style="position: relative;">
+                    <input type="password" name="instructor_password" id="instructorPassword"
+                        placeholder="Instructor Password" required style="padding-right: 40px;">
+                    <i id="togglePassword" class="fas fa-eye-slash"
+                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                </div>
 
-                <!-- Add school_id field -->
-                <input type="text" name="school_id" placeholder="School ID" required> <!-- This is the missing field -->
+
+
+                <input type="text" name="school_id" placeholder="School ID" required>
 
                 <br><br>
                 <button type="submit">Add Instructor</button>
@@ -115,13 +112,13 @@
         </div>
     </div>
 
-    <!-- Change Password Modal -->
+
     <div id="changePasswordModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeChangePasswordModal">&times;</span>
             <h2>Change Password</h2>
 
-            <!-- Change Password Form -->
+
             <form class="change-password-form" method="POST" action="/admin/change_password">
                 <input type="text" name="instructor_id" placeholder="Instructor ID" required>
                 <input type="password" name="new_password" placeholder="New Password" required>
@@ -131,16 +128,16 @@
         </div>
     </div>
 
-    <!-- LISTS Modal -->
+
     <div id="listsModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeListsModal">&times;</span>
             <h2>Student and Instructor Lists</h2>
 
-            <!-- Search Bar -->
+
             <input type="text" class="search-bar" id="searchBar" placeholder="Search Instructors/Students">
 
-            <!-- Refresh Button -->
+
             <button class="refresh-btn" id="refreshListBtn">Refresh List</button>
 
             <div class="list-items">
@@ -183,13 +180,225 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/functionadmin.js') }}"></script>
+    <script>
+
+        $('#refreshListBtn').click(function (event) {
+            event.preventDefault();
+
+            $.ajax({
+                url: "{{ url_for('admin_dashboard') }}",
+                type: "GET",
+                success: function (response) {
+
+                    $('#instructorList').html(response.instructors_html);
+                    $('#studentList').html(response.students_html);
+
+
+                    const instructorRows = document.querySelectorAll("#instructorList tr");
+                    const studentRows = document.querySelectorAll("#studentList tr");
+
+                    searchBar.addEventListener("input", function () {
+                        const filter = searchBar.value.toLowerCase();
+
+
+                        instructorRows.forEach(row => {
+                            const name = row.cells[0]?.textContent.toLowerCase();
+                            const email = row.cells[1]?.textContent.toLowerCase();
+                            if (name && email && (name.includes(filter) || email.includes(filter))) {
+                                row.style.display = "";
+                            } else {
+                                row.style.display = "none";
+                            }
+                        });
+
+
+                        studentRows.forEach(row => {
+                            const name = row.cells[0]?.textContent.toLowerCase();
+                            const email = row.cells[1]?.textContent.toLowerCase();
+                            if (name && email && (name.includes(filter) || email.includes(filter))) {
+                                row.style.display = "";
+                            } else {
+                                row.style.display = "none";
+                            }
+                        });
+                    });
+                },
+                error: function () {
+                    alert('Error refreshing the lists.');
+                }
+            });
+        });
+
+
+        const addInstructorModal = document.getElementById("addInstructorModal");
+        const listsModal = document.getElementById("listsModal");
+        const closeAddInstructorModal = document.getElementById("closeAddInstructorModal");
+        const closeChangePasswordModal = document.getElementById("closeChangePasswordModal");
+        const closeListsModal = document.getElementById("closeListsModal");
+        const addInstructorBtn = document.getElementById("addInstructorBtn");
+        const changePasswordBtn = document.getElementById("changePasswordBtn");
+        const generateReportsBtn = document.getElementById("generateReportsBtn");
+
+
+        addInstructorBtn.onclick = function () { addInstructorModal.style.display = "block"; }
+        changePasswordBtn.onclick = function () { changePasswordModal.style.display = "block"; }
+        generateReportsBtn.onclick = function () { listsModal.style.display = "block"; }
+
+
+        closeAddInstructorModal.onclick = function () { addInstructorModal.style.display = "none"; }
+        closeChangePasswordModal.onclick = function () { changePasswordModal.style.display = "none"; }
+        closeListsModal.onclick = function () { listsModal.style.display = "none"; }
+
+
+        window.onclick = function (event) {
+            if (event.target === addInstructorModal) { addInstructorModal.style.display = "none"; }
+            if (event.target === changePasswordModal) { changePasswordModal.style.display = "none"; }
+            if (event.target === listsModal) { listsModal.style.display = "none"; }
+        }
+
+
+        const searchBar = document.getElementById("searchBar");
+        const instructorRows = document.querySelectorAll("#instructorList tr");
+        const studentRows = document.querySelectorAll("#studentList tr");
+
+        searchBar.addEventListener("input", function () {
+            const filter = searchBar.value.toLowerCase();
+
+
+            instructorRows.forEach(row => {
+                const name = row.cells[0]?.textContent.toLowerCase();
+                const email = row.cells[1]?.textContent.toLowerCase();
+                if (name && email && (name.includes(filter) || email.includes(filter))) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+
+            studentRows.forEach(row => {
+                const name = row.cells[0]?.textContent.toLowerCase();
+                const email = row.cells[1]?.textContent.toLowerCase();
+                if (name && email && (name.includes(filter) || email.includes(filter))) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+
+
+        function openInstructorModal(instructorId, fullName, email) {
+            document.getElementById('instructor_id').textContent = instructorId;
+            document.getElementById('instructor_full_name').textContent = fullName;
+            document.getElementById('instructor_email').textContent = email;
+            new bootstrap.Modal(document.getElementById('instructorModal')).show();
+        }
+
+
+        document.querySelector('.delete-btn').addEventListener('click', () => {
+            const userId = document.querySelector('.delete-input').value.trim();
+
+            if (!userId) {
+                alert("Please enter a User ID to delete.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+                return;
+            }
+
+
+            fetch('/delete_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: userId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.status === 'success') {
+                        document.querySelector('.delete-input').value = '';
+
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the user.');
+                });
+        });
+
+
+        $(document).on('click', '#generateReportsBtn', function () {
+            $('#listsModal').show();
+        });
+
+        function updateCounts() {
+            fetch('/admin_dashboard', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+
+                    document.getElementById('instructorCount').textContent = data.instructor_count;
+                    document.getElementById('studentCount').textContent = data.student_count;
+                    document.getElementById('adminCount').textContent = data.admin_count;
+                })
+                .catch(error => console.error('Error fetching counts:', error));
+        }
+
+        // Update counts every 5 seconds
+        setInterval(updateCounts, 5000);
+
+        function fetchLiveCounts() {
+            $.ajax({
+                url: '{{ url_for("admin_dashboard") }}',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    // Update the counts on the page
+                    $('#instructor_count').text(data.instructor_count);
+                    $('#student_count').text(data.student_count);
+                    $('#admin_count').text(data.admin_count);
+
+                    // Update the instructors and students lists
+                    $('#instructors_list').html(data.instructor_list_html);
+                    $('#students_list').html(data.student_list_html);
+                }
+            });
+        }
+
+        // Set an interval to refresh the live counts every few seconds
+        setInterval(fetchLiveCounts, 5000); // Refresh every 5 seconds
+    </script>
+
+    <!-- <script src="{{ url_for('static', filename='js/functionadmin.js') }}"></script> -->
 
     <script>
         function confirmLogout() {
             return confirm("Are you sure you want to logout?");
         }
     </script>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById("instructorPassword");
+            const toggleIcon = document.getElementById("togglePassword");
+
+            const isPassword = passwordInput.type === "password";
+            passwordInput.type = isPassword ? "text" : "password";
+
+            toggleIcon.classList.toggle("fa-eye");
+            toggleIcon.classList.toggle("fa-eye-slash");
+        }
+        document.getElementById("togglePassword").addEventListener("click", togglePasswordVisibility);
+    </script>
+
 
 </body>
 
