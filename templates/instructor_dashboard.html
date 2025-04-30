@@ -4,83 +4,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instructor Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dashboard.css') }}">
+    <title>Instructor Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dash.css') }}">
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>Instructor Dashboard</h1>
-            <div class="logout-btn-container">
-                <form action="/logout" method="POST" onsubmit="return confirmLogout();">
-                    <button type="submit" class="logout-btn">Logout</button>
-                </form>
-            </div>
-        </header>
-        <div class="instructor-info">
-            <h2>Instructor Details</h2>
-            <p><strong>Name:</strong> {{ instructor.name }}</p>
-            <p><strong>Instructor ID:</strong> {{ instructor.instructor_id }}</p>
-            <p><strong>Subject:</strong> {{ instructor.subject }}</p>
-            <p><strong>Note:</strong>&nbsp;Instructor ID is used for logging in the system.</p>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <h2>Admin Panel</h2>
+            <nav>
+                <ul>
+                    <li class="active"><a href="#dashboard">Dashboard</a></li>
+                    <li><a href="#courses">Courses</a></li>
+                    <li><a href="#students">Students</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-        </div>
+        <main class="content">
+            <header>
+                <h1>Instructor Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ instructor.name }}</span>
+                    <form action="/logout" method="POST" onsubmit="return confirmLogout();">
+                        <button id="logout-btn" type="submit" class="logout-btn">Logout</button>
+                    </form>
 
-        <div class="student-table">
-            <h2>Student List</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Name</th>
-                        <th>Section</th>
-                        <th>Attendance Request</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>001</td>
-                        <td>Alice Smith</td>
-                        <td>A</td>
-                        <td>Requested</td>
-                        <td>
-                            <button class="accept-btn">Accept</button>
-                            <button class="refuse-btn">Refuse</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>002</td>
-                        <td>Bob Johnson</td>
-                        <td>A</td>
-                        <td>Requested</td>
-                        <td>
-                            <button class="accept-btn">Accept</button>
-                            <button class="refuse-btn">Refuse</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>003</td>
-                        <td>Charlie Brown</td>
-                        <td>B</td>
-                        <td>Requested</td>
-                        <td>
-                            <button class="accept-btn">Accept</button>
-                            <button class="refuse-btn">Refuse</button>
-                        </td>
-                    </tr>
+                </div>
+            </header>
 
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <section id="dashboard-view" class="view">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>Number Of Subjects Added</h3>
+                        <p id="total-courses">{{ subject_count }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Students</h3>
+                        <p id="active-students">{{ student_count }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Requests</h3>
+                        <p id="pending-requests">5</p>
+                    </div>
+                </div>
+
+                <div class="subject-management">
+                    <h2>Subject Management</h2>
+                    <form id="subject-form">
+                        <select id="courseSelect" name="course" required>
+                            <option value="">Select Course</option>
+                            <option value="BSIT">BSIT</option>
+                            <option value="BSCS">BSCS</option>
+                            <option value="BSECE">BSECE</option>
+                            <option value="BSIS">BSIS</option>
+                            <option value="BSPT">BSPT</option>
+                        </select>
+
+                        <select id="trackSelect" name="track" required>
+                            <option value="">Select Track</option>
+                        </select>
+                        <div class="form-group">
+                            <label for="subject-code">Subject Code:</label>
+                            <input type="text" id="subject-code" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject-name">Subject Name:</label>
+                            <input type="text" id="subject-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject-description">Description:</label>
+                            <textarea id="subject-description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject-day">Day:</label>
+                            <select id="subject-day" name="subject-day">
+                                <option value="">Select Day</option>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                                <option value="Sunday">Sunday</option>
+                            </select>
+
+                            <label for="subject-time">Time:</label>
+                            <input type="time" id="subject-time" name="subject-time">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Add Subject</button>
+                            <button type="button" id="clear-form" class="btn-secondary">Clear Form</button>
+                        </div>
+                    </form>
+                    <br>
+                    <hr>
+                    <div class="subject-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Track</th>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Schedule</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subject-table-body">
+                                <!-- Subjects will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script>
-        function confirmLogout() {
-            return confirm("Are you sure you want to logout?");
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            const subjectForm = document.getElementById('subject-form');
+            const clearFormBtn = document.getElementById('clear-form');
+            const subjectTableBody = document.getElementById('subject-table-body');
+
+            let currentEditId = null;  // <-- more readable than "editIndex"
+            let editingSubjectId = null;  // null = add mode, number = edit mode
+
+
+            loadSubjects();
+
+            subjectForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const subjectCode = document.getElementById('subject-code').value.trim();
+                const subjectName = document.getElementById('subject-name').value.trim();
+                const subjectDescription = document.getElementById('subject-description').value.trim();
+                const subjectDay = document.getElementById('subject-day').value;
+                const subjectTime = document.getElementById('subject-time').value;
+                const subjectCourse = document.getElementById('courseSelect').value;
+                const subjectTrack = document.getElementById('trackSelect').value;
+
+                const subjectSchedule = `${subjectDay} ${subjectTime}`;
+
+                if (!subjectCode || !subjectName || !subjectDay || !subjectTime || !subjectCourse || !subjectTrack) {
+                    alert("Subject Code, Name, Day, Time, Course, and Track are required.");
+                    return;
+                }
+
+                const payload = {
+                    code: subjectCode,
+                    name: subjectName,
+                    description: subjectDescription,
+                    schedule: subjectSchedule,
+                    course: subjectCourse,
+                    track: subjectTrack
+                };
+
+
+                try {
+                    // 🔥 HERE: Choose URL + method depending on edit/add mode
+                    const url = currentEditId ? `/subjects/${currentEditId}` : '/subjects/add';
+                    const method = currentEditId ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to save subject');
+                    }
+
+                    const result = await response.json();
+                    alert(result.message || 'Success!');
+                    subjectForm.reset();
+                    currentEditId = null; // <-- reset edit mode after success
+                    loadSubjects();
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    alert(error.message);
+                }
+            });
+
+            clearFormBtn.addEventListener('click', function () {
+                subjectForm.reset();
+                currentEditId = null;
+            });
+
+            async function loadSubjects() {
+                try {
+                    const response = await fetch('/subjects');
+                    const subjects = await response.json();
+                    subjectTableBody.innerHTML = '';
+
+                    if (Array.isArray(subjects)) {
+                        subjects.forEach(subject => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                        <td>${subject.course || ''}</td>
+                        <td>${subject.track || ''}</td>
+                        <td>${subject.code}</td>
+                        <td>${subject.name}</td>
+                        <td>${subject.description || ''}</td>
+                        <td>${subject.schedule || ''}</td>
+                        <td class="action-buttons">
+                            <button class="btn-edit" data-id="${subject.id}">Edit</button>
+                            <button class="btn-delete" data-id="${subject.id}">Delete</button>
+                        </td>
+                    `;
+                            subjectTableBody.appendChild(row);
+                        });
+
+                        document.querySelectorAll('.btn-edit').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                const subjectId = this.getAttribute('data-id');
+                                startEditingSubject(subjectId);
+                            });
+                        });
+
+                        document.querySelectorAll('.btn-delete').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                const subjectId = this.getAttribute('data-id');
+                                deleteSubject(subjectId);
+                            });
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('Error loading subjects:', error);
+                    alert('Failed to load subjects.');
+                }
+            }
+            loadSubjects();
+
+            async function startEditingSubject(subjectId) {
+                try {
+                    const response = await fetch(`/subjects/${subjectId}`);
+                    console.log('Response URL:', response.url);
+
+                    // Read the response body once and store it
+                    const responseBody = await response.text();
+
+                    // Check if response was successful
+                    if (!response.ok) {
+                        if (responseBody.includes('<!DOCTYPE')) {
+                            throw new Error('Invalid route: HTML received instead of JSON');
+                        }
+                        throw new Error(JSON.parse(responseBody).error || 'Failed to load subject details');
+                    }
+
+                    // Parse the stored response body as JSON
+                    const subject = JSON.parse(responseBody);
+
+                    // Populate form fields using object properties
+                    document.getElementById('subject-code').value = subject.code;
+                    document.getElementById('subject-name').value = subject.name;
+                    document.getElementById('subject-description').value = subject.description;
+
+                    // Split schedule into day and time
+                    const [day, time] = subject.schedule.split(' ');
+                    document.getElementById('subject-day').value = day;
+                    document.getElementById('subject-time').value = time;
+
+                    currentEditId = subject.id;
+                } catch (error) {
+                    console.error('Error loading subject:', error);
+                    alert(`Failed to load subject details: ${error.message}`);
+                }
+            }
+
+            async function deleteSubject(subjectId) {
+                if (confirm('Are you sure you want to delete this subject?')) {
+                    try {
+                        const response = await fetch(`/subjects/${subjectId}`, { method: 'DELETE' });
+
+                        if (response.ok) {
+                            alert('Subject deleted successfully.');
+                            loadSubjects();
+                        } else {
+                            alert('Failed to delete subject.');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting subject:', error);
+                        alert('An error occurred while deleting.');
+                    }
+                }
+            }
+        });
+
+        const coursesData = {
+            "BSIT": ["WMAD", "NS", "BPO", "BA", "AI", "Cloud Computing"],
+            "BSCS": ["Software Engineering", "Networking", "Database Management", "Cyber Security", "Machine Learning"],
+            "BSECE": ["Embedded Systems", "Power Electronics", "Signal Processing", "Circuit Design"],
+            "BSIS": ["System Administration", "Web Development", "Data Science", "Business Intelligence"],
+            "BSPT": ["Physical Therapy", "Musculoskeletal Health", "Sports Rehab"]
+        };
+
+        document.getElementById('courseSelect').addEventListener('change', function () {
+            const course = this.value;
+            const trackSelect = document.getElementById("trackSelect");
+            trackSelect.innerHTML = "<option value=''>Select Track</option>";
+
+            if (course) {
+                const tracks = coursesData[course];
+                tracks.forEach(track => {
+                    const option = document.createElement("option");
+                    option.value = track;
+                    option.textContent = track;
+                    trackSelect.appendChild(option);
+                });
+            }
+        });
     </script>
 </body>
 

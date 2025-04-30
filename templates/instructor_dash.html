@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dash.css') }}">
+</head>
+
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <h2>Admin Panel</h2>
+            <nav>
+                <ul>
+                    <li class="active"><a href="#dashboard">Dashboard</a></li>
+                    <li><a href="#courses">Courses</a></li>
+                    <li><a href="#students">Students</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header>
+                <h1>Instructor Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, Admin</span>
+                    <button id="logout-btn">Logout</button>
+                </div>
+            </header>
+
+            <section id="dashboard-view" class="view">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>Total Courses</h3>
+                        <p id="total-courses">12</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Students</h3>
+                        <p id="active-students">245</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Requests</h3>
+                        <p id="pending-requests">5</p>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2>Recent Activity</h2>
+                    <ul id="activity-list">
+                        <li>Student John Doe enrolled in Course 101</li>
+                        <li>New course "Advanced JavaScript" added</li>
+                        <li>Assignment submitted by Jane Smith</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -12,13 +12,17 @@ from werkzeug.security import generate_password_hash
 from flask import session, redirect, url_for, render_template
 import logging
 import mariadb
+from flask import request, jsonify, session
+
+from utils import row_to_dict, rows_to_dict
+
 app = Flask(__name__)
-app.secret_key = 'baf9b68b0462ae76626618725c83460b'  # wag i delete
+app.secret_key = '77ddb26acf05b21b43c1f8cfda7062dc'  # wag i delete
 
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'loleris1234',
+    'password': 'sulasok_tv',
     'database': 'attendance_tracker',
 }
 
@@ -60,7 +64,7 @@ def login():
             elif user['role'] == 'instructor':
                 return redirect(url_for('instructor_dashboard'))
             else:
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('student_dashboard'))
         else:
            
             return render_template("login.html", error="Invalid login credentials")
@@ -339,174 +343,295 @@ def instructor_dashboard():
         user_id = session['user_id']
         connection = get_db_connection()
         cursor = connection.cursor()
+
+        # Fetch instructor info
         cursor.execute("""
-            SELECT u.name, u.school_id, i.instructor_id, i.subject 
+            SELECT u.name, u.school_id, i.instructor_id
             FROM users u
             JOIN instructors i ON u.id = i.user_id
             WHERE u.id = %s
         """, (user_id,))
         instructor = cursor.fetchone()
+
+        # Fetch active student count
+        cursor.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'student'")
+        student_count = cursor.fetchone()['count']
+
+        cursor.execute("SELECT COUNT(*) AS count FROM subjects")
+        subject_count = cursor.fetchone()['count']
+
         connection.close()
-        return render_template("instructor_dashboard.html", instructor=instructor)
+
+        return render_template("instructor_dashboard.html",
+                               instructor=instructor,
+                               student_count=student_count,
+                               subject_count=subject_count)
     else:
         return redirect(url_for('login'))
-    
-    subject_schedule = {
-    "Monday": [
-        ("Information Management | IT 221 | 10:00AM - 1:00PM", 10, 13),
-        ("Cybersecurity | IT NS 1 | 8:00AM - 10:00AM", 8, 10),
-    ],
-    "Tuesday": [
-        ("Networking 1 | IT 222 | 8:00AM - 10:00AM", 8, 10),
-        ("Life and Works of Rizal | GEC 9 | 1:00PM - 2:30PM", 13, 14.5),
-    ],
-    "Wednesday": [
-        ("Quantitative Methods | IT 223 | 2:30PM - 4:00PM", 14.5, 16),
-    ],
-    "Thursday": [
-        ("Accounting for Information Technology | IT 225 | 4:00PM - 5:30PM", 16, 17.5),
-        ("The Entrepreneurial Mind | IT GE ELECTIVE 4 | 1:00PM - 3:00PM", 13, 15),
-    ],
-    "Friday": [
-        ("PATHFIT 4 | PE 4 | 1:00PM - 3:00PM", 13, 15),
-        ("Integrative Programming and Technologies | IT 224 | 8:00AM - 10:00AM", 8, 10),
-    ],
-    "Saturday": [
-        
-        ("Computer Programming 1 | IT 101 | 6:00PM - 6:05PM", 18, 18.0833),
-        ("Computer Programming 1 | IT 101 | 9:00PM - 10:00PM", 21, 22),
-    ],
-    "Sunday": [
-        ("Contemporary World | GEC 6 | 9:00AM - 11:30AM", 9, 11.5),
-        ("Introduction to Computing | IT 100 | 1:00PM - 3:00PM", 13, 15),
-    ]
-}
 
-@app.route("/dashboard")
-def dashboard():
-    if 'role' in session and session['role'] == 'student':
-        user_id = session['user_id']
+@app.route("/subjects/add", methods=["POST"])
+def add_subject():
+    if 'role' not in session or session['role'] != 'instructor':
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    try:
+        # Get form data from frontend
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['code', 'name', 'schedule', 'course', 'track']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({
+                "error": f"Missing required fields: {', '.join(missing_fields)}"
+            }), 400
+            
+        code = data['code']
+        name = data['name']
+        schedule = data['schedule']  # Format: "Day Time"
+        course = data['course']
+        track = data['track']
+
+        
+        # Validate schedule format
+        schedule_parts = schedule.split(' ', 1)
+        if len(schedule_parts) != 2:
+            return jsonify({
+                "error": "Invalid schedule format. Must include day and time."
+            }), 400
+        
+        # Database operations
         connection = get_db_connection()
         cursor = connection.cursor()
-
         
-        cursor.execute(""" 
-            SELECT u.name, u.school_id, s.firstname, s.lastname, u.email 
-            FROM users u 
-            JOIN students s ON u.id = s.user_id 
+        # Get instructor_id linked to user_id
+        cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", 
+                      (session['user_id'],))
+        instructor = cursor.fetchone()
+        
+        if not instructor:
+            connection.close()
+            return jsonify({"error": "Instructor not found"}), 404
+            
+        instructor_id = instructor['instructor_id']
+        
+        # Add subject to database
+        cursor.execute("""
+            INSERT INTO subjects (code, name, description, schedule, instructor_id, course, track)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (code, name, data.get('description'), schedule, instructor_id, course, track))
+        #the one you just gave rn
+        cursor.execute("""
+            INSERT INTO subjects (code, name, description, schedule, instructor_id, course, track)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (code, name, data.get('description'), schedule, instructor_id, course, track))
+
+
+        connection.commit()
+        connection.close()
+        
+        return jsonify({
+            "message": "Subject added successfully",
+            "subject": {
+            "code": code,
+            "name": name,
+            "schedule": schedule,
+            "description": data.get('description'),
+            "course": course,
+            "track": track
+            }
+        })
+    except Exception as e:
+        # Ensure connection is closed even if error occurs
+        if 'connection' in locals():
+            connection.close()
+            
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/subjects", methods=["GET"])
+def get_subjects():
+    if 'role' not in session or session['role'] != 'instructor':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    user_id = session['user_id']
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # Get instructor_id from user_id
+    cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", (user_id,))
+    instructor = cursor.fetchone()
+
+    if not instructor:
+        connection.close()
+        return jsonify({"error": "Instructor not found"}), 404
+
+    instructor_id = instructor['instructor_id']
+
+    # Fetch subjects for this instructor
+    cursor.execute("""
+        SELECT id, code, name, description, schedule, course, track
+        FROM subjects
+        WHERE instructor_id = %s
+    """, (instructor_id,))
+    subjects = cursor.fetchall()
+    connection.close()
+
+    return jsonify(subjects)
+
+@app.route("/subjects/count", methods=["GET"])
+def count_subjects():
+    if 'role' not in session or session['role'] != 'instructor':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # Count subjects (if you later want to count only THEIR subjects, you can filter by instructor_id if needed)
+    cursor.execute("SELECT COUNT(*) AS count FROM subjects")
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return jsonify({"count": result['count']})
+
+@app.route("/subjects/<int:subject_id>", methods=["GET"])
+def get_subject(subject_id):
+    print(f"Fetching subject ID: {subject_id}")
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, code, name, description, schedule, course, track FROM subjects WHERE id = %s", (subject_id,))
+    subject = cursor.fetchone()
+    print(f"Fetched subject from DB: {subject}")
+    connection.close()
+
+    if not subject:
+        print("Subject not found, returning 404 JSON")
+        return jsonify({"error": "Subject not found"}), 404
+
+    return jsonify({
+    "id": subject["id"],
+    "code": subject["code"],
+    "name": subject["name"],
+    "description": subject["description"],
+    "schedule": subject["schedule"],
+    "course": subject["course"],
+    "track": subject["track"]
+})
+
+@app.route("/subjects/<int:subject_id>", methods=["PUT"])
+def update_subject(subject_id):
+    if 'role' not in session or session['role'] != 'instructor':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    data = request.get_json()
+    code = data.get('code')
+    name = data.get('name')
+    description = data.get('description')
+    schedule = data.get('schedule')
+    course = data.get('course')
+    track = data.get('track')
+
+
+    if not code or not name:
+        connection.close()
+        return jsonify({"error": "Code and Name are required"}), 400
+
+    cursor.execute("""
+        UPDATE subjects 
+        SET code = %s, name = %s, description = %s, schedule = %s, course = %s, track = %s
+        WHERE id = %s
+    """, (code, name, description, schedule, course, track, subject_id))
+
+
+    connection.commit()
+    connection.close()
+
+    return jsonify({"message": "Subject updated successfully!"})
+
+@app.route("/subjects/<int:subject_id>", methods=["DELETE"])
+def delete_subject(subject_id):
+    if 'role' not in session or session['role'] != 'instructor':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM subjects WHERE id = %s", (subject_id,))
+    connection.commit()
+    connection.close()
+
+    return jsonify({"message": "Subject deleted successfully."})
+
+#Students
+@app.route("/student_dashboard")
+def student_dashboard():
+    print("➡️ Request received for /student_dashboard")
+    if 'user_id' not in session or session.get('role') != 'student':
+        print("🚫 Unauthorized access or user not logged in as student. Redirecting to login.")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    print(f"👤 User ID from session: {user_id}")
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        print("✅ Database connection established.")
+
+        # Get student info
+        cursor.execute("""
+            SELECT u.name, u.school_id, s.firstname, s.lastname, s.course, s.track, u.email
+            FROM users u
+            JOIN students s ON u.id = s.user_id
             WHERE u.id = %s
         """, (user_id,))
         student = cursor.fetchone()
 
-        if student:
-           
-            subject_schedule = {
-                "Monday": [
-                    ("Information Management | IT 221 | 10:00AM - 1:00PM", 10, 13),
-                    ("Cybersecurity | IT NS 1 | 8:00AM - 10:00AM", 8, 10),
-                ],
-                "Tuesday": [
-                    ("Networking 1 | IT 222 | 8:00AM - 10:00AM", 8, 10),
-                    ("Life and Works of Rizal | GEC 9 | 1:00PM - 2:30PM", 13, 14.5),
-                ],
-                "Wednesday": [
-                    ("Quantitative Methods | IT 223 | 2:30PM - 4:00PM", 14.5, 16),
-                ],
-                "Thursday": [
-                    ("Accounting for Information Technology | IT 225 | 4:00PM - 5:30PM", 16, 17.5),
-                    ("The Entrepreneurial Mind | IT GE ELECTIVE 4 | 1:00PM - 3:00PM", 13, 15),
-                ],
-                "Friday": [
-                    ("PATHFIT 4 | PE 4 | 1:00PM - 3:00PM", 13, 15),
-                    ("Integrative Programming and Technologies | IT 224 | 8:00AM - 10:00AM", 8, 10),
-                ],
-                "Saturday": [
-                    ("Computer Programming 1 | IT 101 | 6:00PM - 6:05PM", 18, 18.0833),
-                    ("Computer Programming 1 | IT 101 | 9:00PM - 10:00PM", 21, 22),
-                    ("Free Time | N/A | 6:18PM - 6:25PM", 18.3, 18.4167),
-                ],
-                "Sunday": [
-                    ("Contemporary World | GEC 6 | 9:00AM - 11:30AM", 9, 11.5),
-                    ("Introduction to Computing | IT 100 | 1:00PM - 3:00PM", 13, 15),
-                ]
-            }
-
-            
-            timezone = pytz.timezone("Asia/Manila")
-            now = datetime.now(timezone)
-            current_day = now.strftime("%A")
-            current_hour = now.hour + now.minute / 60
-
-            
-            logging.info(f"Current Time: {now}, Current Day: {current_day}, Current Hour: {current_hour}")
-
-            
-            cursor.execute("""
-                SELECT subject_name FROM attendance WHERE student_id = %s AND DATE(date) = %s
-            """, (user_id, now.date()))
-            marked_subjects = [row['subject_name'] for row in cursor.fetchall()]
-
-            
-            logging.info(f"Marked subjects for today: {marked_subjects}")
-
-            active_subjects = []
-            today_schedule = subject_schedule.get(current_day, [])
-
-            for subject in today_schedule:
-                subject_name, start_time, end_time = subject
-
-               
-                logging.info(f"Checking subject: {subject_name} - Start Time: {start_time}, End Time: {end_time}")
-
-                
-                if start_time <= current_hour <= end_time:
-                    status = 'on_time'
-                elif current_hour > end_time:
-                    status = 'late'
-                else:
-                    status = 'upcoming'
-
-                attended_on_time = subject_name in marked_subjects
-
-                
-                cursor.execute("""
-                    SELECT s.school_id 
-                    FROM attendance a
-                    JOIN students s ON a.student_id = s.user_id
-                    WHERE a.subject_name = %s AND a.date = %s
-                """, (subject_name, now.date()))
-                student_list = cursor.fetchall()
-
-                active_subjects.append({
-                    'subject_name': subject_name,
-                    'status': status,
-                    'attended_on_time': attended_on_time,
-                    'student_list': student_list 
-                })
-
-            
+        if not student:
             connection.close()
-
-            return render_template(
-                "dashboard.html", 
-                student_name=student['name'], 
-                student_id=student['school_id'],
-                user=student,
-                active_subjects=active_subjects
-            )
-        else:
-            connection.close()
-            logging.error(f"Student with user_id {user_id} not found.")
+            print("⚠️ Student not found in the database.")
             return "Student not found", 404
-    else:
-        logging.warning("Unauthorized access attempt, role is not student.")
-        return redirect(url_for('login'))
+        else:
+            print(f"📚 Student data retrieved: {student['name']} ({student['school_id']})")
 
+        course = student['course']
+        track = student['track']
+        print(f"🎓 Course: {course}, Track: {track}")
 
+        # Get subjects matching course & track
+        cursor.execute("""
+            SELECT name AS subject_name, schedule
+            FROM subjects
+            WHERE course = %s AND track = %s
+        """, (course, track))
+        subjects = cursor.fetchall()
 
+        if subjects:
+            print(f"📖 Found {len(subjects)} subjects for {course} - {track}.")
+            for subject in subjects:
+                print(f"   - {subject['subject_name']} ({subject['schedule']})")
+        else:
+            print("No subjects found for this course and track.")
 
+        connection.close()
+        print("🔒 Database connection closed.")
 
-
+        print("✅ Rendering student dashboard.")
+        return render_template("dashboard.html",
+                               student_name=student['name'],
+                               student_id=student['school_id'],
+                               user=student,
+                               active_subjects=subjects)
+    except Exception as e:
+        print(f"🔴 An error occurred: {e}")
+        if 'connection' in locals() and connection:
+            connection.close()
+            print("⚠️ Database connection closed due to error.")
+        return "An error occurred while processing your request.", 500
+#End Students
 @app.route('/logout', methods=["POST"])
 def logout():
     session.clear()  
@@ -520,6 +645,7 @@ def add_header(response):
     return response
 
 logging.basicConfig(level=logging.INFO)
+
 from datetime import datetime
 import pytz
 
