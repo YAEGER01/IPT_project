@@ -1,0 +1,69 @@
+<!-- templates/instructor_attendance.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance - {{ subject.code }}: {{ subject.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dash.css') }}">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        h2 {
+            margin-top: 20px;
+        }
+
+        .container {
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Attendance Records for {{ subject.code }}: {{ subject.name }}</h2>
+        <a href="{{ url_for('instructor_subjects') }}">&larr; Back to Subjects</a>
+
+        {% if records %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Date</th>
+                    <th>Time In</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.firstname }} {{ record.lastname }}</td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.time_in }}</td>
+                    <td>{{ record.status|capitalize }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No attendance records available for this subject.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>

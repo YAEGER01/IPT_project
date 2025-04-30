@@ -9,7 +9,14 @@
     <!-- FOR AREA NG MGA CSS DESIGNS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-
+    <style>
+        .subject.active {
+            border: 2px solid #28a745;
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+    </style>
 
     <!-- FOR AREA NG MGA SCRIPTS NG PROJECT -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
@@ -61,19 +68,15 @@
                 </div>
 
                 <div class="subject-container">
-                    {% if active_subjects %}
-                    {% for subject in active_subjects %}
-                    <button class="subject {{ subject.status }} 
-                                    {% if subject.attended_on_time %}attended-on-time{% endif %}"
-                        data-subject="{{ subject.subject_name }}" data-status="{{ subject.status }}" {% if
-                        subject.attended_on_time or subject.status=='late' or subject.status=='upcoming' %} disabled {%
-                        endif %}>
-                        {% if subject.attended_on_time %}
-                        Attendance Marked
-                        {% else %}
+                    {% if subjects %}
+                    {% for subject in subjects %}
+
+                    <button class="subject" data-subject="{{ subject.subject_name }}"
+                        data-start="{{ subject.start_time }}" {% if subject.attended_on_time %} class="attended-on-time"
+                        disabled {% endif %}>
                         {{ subject.subject_name }}
-                        {% endif %}
                     </button>
+
                     {% endfor %}
                     {% else %}
                     <div class="subject">No subjects currently available. Please check back later.</div>
@@ -83,19 +86,12 @@
 
             </main>
             <div class="right-container">
-                <h3>STUDENT LIST</h3>
-                <p>{{ current_subject_name }}</p>
-
-                <ul id="studentList">
-                    {% if student_list %}
-                    {% for student_id in student_list %}
-                    <li>Student ID: {{ student_id }}</li>
-                    {% endfor %}
-                    {% else %}
-                    <li>No students have marked their attendance yet.</li>
-                    {% endif %}
+                <h3>MY ATTENDANCE</h3>
+                <ul id="attendanceList">
+                    <li>Loading attendance records...</li>
                 </ul>
             </div>
+
 
 
         </div>
@@ -333,6 +329,82 @@
             });
         });
 
+    </script>
+
+    <script>
+        function loadAttendanceHistory() {
+            fetch('/student/attendance_history')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('attendanceList');
+                    list.innerHTML = '';
+
+                    if (data.length === 0) {
+                        list.innerHTML = '<li>No attendance records yet.</li>';
+                        return;
+                    }
+
+                    data.forEach(record => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<strong>${record.subject_name}</strong><br>
+                                    Time: ${record.time_in}<br>
+                                    Remarks: ${record.status === 'on_time' ? '✅ On Time' : '⏰ Late'}`;
+                        list.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('attendanceList').innerHTML = '<li>Error loading attendance records.</li>';
+                    console.error(err);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAttendanceHistory);
+    </script>
+    <script>
+        function updateButtonStates() {
+            const buttons = document.querySelectorAll(".subject");
+            const now = new Date();
+            const nowStr = now.toLocaleTimeString('en-US', { hour12: false });
+
+            console.log(`🕒 Checking subject buttons at: ${nowStr}`);
+
+            buttons.forEach(button => {
+                const subjectName = button.getAttribute("data-subject");
+                const startTimeStr = button.getAttribute("data-start");
+                if (!startTimeStr) {
+                    console.warn(`⚠️ Missing start time for subject: ${subjectName}`);
+                    return;
+                }
+
+                const [hour, minute, second] = startTimeStr.split(":").map(Number);
+                const subjectStart = new Date();
+                subjectStart.setHours(hour, minute, second || 0, 0);
+
+                const openWindow = new Date(subjectStart.getTime() - 10 * 60 * 1000); // 10 min before
+                const closeWindow = new Date(subjectStart.getTime() + 10 * 60 * 1000); // 10 min after
+
+                const alreadyAttended = button.classList.contains("attended-on-time");
+                const isWithinWindow = now >= openWindow && now <= closeWindow;
+
+                console.log(`📚 ${subjectName}: ${startTimeStr} → window: ${openWindow.toLocaleTimeString()} to ${closeWindow.toLocaleTimeString()}`);
+                console.log(`   🔎 Status: ${alreadyAttended ? '✅ Already attended' : (isWithinWindow ? '🟢 Active' : '⛔ Disabled')}`);
+
+                // Enable or disable based on time and attendance
+                if (isWithinWindow && !alreadyAttended) {
+                    button.disabled = false;
+                    button.classList.add('active');
+                } else {
+                    button.disabled = true;
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Initial check on load
+        document.addEventListener("DOMContentLoaded", () => {
+            updateButtonStates();
+            setInterval(updateButtonStates, 30000); // every 30 seconds
+        });
     </script>
 
 

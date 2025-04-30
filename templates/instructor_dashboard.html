@@ -6,27 +6,340 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Admin</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor_dash.css') }}">
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-gray: #F2F2F7;
+            --ios-dark-gray: #1C1C1E;
+            --ios-light-gray: #E5E5EA;
+            --ios-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --ios-separator: #D1D1D6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--ios-gray);
+            color: var(--ios-dark-gray);
+        }
+
+        .admin-container {
+            display: flex;
+            flex-direction: column;
+            /* Stack elements vertically by default */
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background-color: white;
+            border-bottom: 1px solid var(--ios-separator);
+            /* Border at the bottom for mobile view */
+            padding: 20px;
+            width: 100%;
+            /* Full width on smaller screens */
+        }
+
+        .sidebar h2 {
+            color: black;
+            font-size: 20px;
+            font-weight: 600;
+            padding-bottom: 15px;
+            margin: 0 0 15px;
+            border-bottom: 1px solid var(--ios-separator);
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar nav li {
+            padding: 12px 0;
+            /* Adjust padding for vertical layout */
+        }
+
+        .sidebar nav li.active {
+            background-color: rgba(0, 122, 255, 0.1);
+            border-left: none;
+            /* Remove left border in mobile view */
+            border-bottom: 3px solid var(--ios-blue);
+            /* Add bottom indicator */
+        }
+
+        .sidebar nav a {
+            text-decoration: none;
+            color: var(--ios-dark-gray);
+            font-size: 17px;
+            display: block;
+        }
+
+        .sidebar nav li.active a {
+            color: var(--ios-blue);
+            font-weight: 500;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info span {
+            font-size: 15px;
+            color: #636366;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--ios-blue);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            /* Adjust minmax for smaller screens */
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--ios-card-shadow);
+        }
+
+        .stat-card h3 {
+            font-size: 15px;
+            color: #636366;
+            margin: 0 0 8px;
+            font-weight: 500;
+        }
+
+        .stat-card p {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--ios-dark-gray);
+        }
+
+        .subject-management {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--ios-card-shadow);
+            margin-top: 20px;
+        }
+
+        .subject-management h2 {
+            font-size: 20px;
+            margin: 0 0 20px;
+        }
+
+        #subject-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            /* Adjust minmax for smaller screens */
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 13px;
+            color: #636366;
+            margin-bottom: 4px;
+        }
+
+        select,
+        input,
+        textarea {
+            padding: 10px;
+            border: 1px solid var(--ios-separator);
+            border-radius: 8px;
+            font-size: 15px;
+            background-color: white;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--ios-blue);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--ios-light-gray);
+            color: var(--ios-dark-gray);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--ios-separator);
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            font-size: 13px;
+            color: #636366;
+            font-weight: 500;
+            border-bottom: 1px solid var(--ios-separator);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--ios-separator);
+            font-size: 15px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-edit {
+            background-color: var(--ios-blue);
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #FF3B30;
+            color: white;
+        }
+
+        /* Media query for larger screens (e.g., tablets and desktops) */
+        @media (min-width: 768px) {
+            .admin-container {
+                flex-direction: row;
+                /* Arrange sidebar and content horizontally */
+            }
+
+            .sidebar {
+                width: 240px;
+                border-right: 1px solid var(--ios-separator);
+                border-bottom: none;
+                /* Remove bottom border on larger screens */
+                padding: 20px 0;
+            }
+
+            .sidebar h2 {
+                padding: 0 20px 15px;
+                margin: 0 20px 15px 20px;
+            }
+
+            .sidebar nav li {
+                padding: 12px 20px;
+            }
+
+            .sidebar nav li.active {
+                border-left: 3px solid var(--ios-blue);
+                /* Add left border back */
+                border-bottom: none;
+                /* Remove bottom indicator */
+            }
+
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                /* Reset minmax */
+            }
+
+            #subject-form {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                /* Reset minmax */
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div class="admin-container">
         <aside class="sidebar">
-            <h2>Admin Panel</h2>
+            <h2>
+                <span>Welcome, {{ instructor.name }}</span>
+            </h2>
             <nav>
                 <ul>
-                    <li class="active"><a href="#dashboard">Dashboard</a></li>
-                    <li><a href="#courses">Courses</a></li>
-                    <li><a href="#students">Students</a></li>
-                    <li><a href="#settings">Settings</a></li>
+                    <li><a href="{{ url_for('instructor_subjects') }}">Subjects</a></li>
                 </ul>
             </nav>
         </aside>
+
 
         <main class="content">
             <header>
                 <h1>Instructor Dashboard</h1>
                 <div class="user-info">
-                    <span>Welcome, {{ instructor.name }}</span>
+
                     <form action="/logout" method="POST" onsubmit="return confirmLogout();">
                         <button id="logout-btn" type="submit" class="logout-btn">Logout</button>
                     </form>
@@ -41,13 +354,10 @@
                         <p id="total-courses">{{ subject_count }}</p>
                     </div>
                     <div class="stat-card">
-                        <h3>Active Students</h3>
+                        <h3>Students</h3>
                         <p id="active-students">{{ student_count }}</p>
                     </div>
-                    <div class="stat-card">
-                        <h3>Pending Requests</h3>
-                        <p id="pending-requests">5</p>
-                    </div>
+
                 </div>
 
                 <div class="subject-management">
@@ -90,8 +400,12 @@
                                 <option value="Sunday">Sunday</option>
                             </select>
 
-                            <label for="subject-time">Time:</label>
-                            <input type="time" id="subject-time" name="subject-time">
+                            <label for="start-time">Start Time:</label>
+                            <input type="time" id="start-time" name="start-time" required>
+
+                            <label for="end-time">End Time:</label>
+                            <input type="time" id="end-time" name="end-time" required>
+
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">Add Subject</button>
@@ -141,25 +455,28 @@
                 const subjectName = document.getElementById('subject-name').value.trim();
                 const subjectDescription = document.getElementById('subject-description').value.trim();
                 const subjectDay = document.getElementById('subject-day').value;
-                const subjectTime = document.getElementById('subject-time').value;
                 const subjectCourse = document.getElementById('courseSelect').value;
                 const subjectTrack = document.getElementById('trackSelect').value;
+                const startTime = document.getElementById('start-time').value;
+                const endTime = document.getElementById('end-time').value;
 
-                const subjectSchedule = `${subjectDay} ${subjectTime}`;
-
-                if (!subjectCode || !subjectName || !subjectDay || !subjectTime || !subjectCourse || !subjectTrack) {
-                    alert("Subject Code, Name, Day, Time, Course, and Track are required.");
+                if (!subjectCode || !subjectName || !subjectDay || !subjectCourse || !subjectTrack || !startTime || !endTime) {
+                    alert("All fields are required.");
                     return;
                 }
+
 
                 const payload = {
                     code: subjectCode,
                     name: subjectName,
                     description: subjectDescription,
-                    schedule: subjectSchedule,
+                    day: subjectDay,
+                    start_time: startTime,
+                    end_time: endTime,
                     course: subjectCourse,
                     track: subjectTrack
                 };
+
 
 
                 try {
@@ -211,7 +528,7 @@
                         <td>${subject.code}</td>
                         <td>${subject.name}</td>
                         <td>${subject.description || ''}</td>
-                        <td>${subject.schedule || ''}</td>
+                        <td>${subject.day} ${subject.start_time} - ${subject.end_time}</td>
                         <td class="action-buttons">
                             <button class="btn-edit" data-id="${subject.id}">Edit</button>
                             <button class="btn-delete" data-id="${subject.id}">Delete</button>
@@ -267,9 +584,10 @@
                     document.getElementById('subject-description').value = subject.description;
 
                     // Split schedule into day and time
-                    const [day, time] = subject.schedule.split(' ');
-                    document.getElementById('subject-day').value = day;
-                    document.getElementById('subject-time').value = time;
+                    document.getElementById('subject-day').value = subject.day;
+                    document.getElementById('start-time').value = subject.start_time;
+                    document.getElementById('end-time').value = subject.end_time;
+
 
                     currentEditId = subject.id;
                 } catch (error) {

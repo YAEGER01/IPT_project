@@ -1,7 +1,8 @@
+import sched
 from flask import Flask, render_template, jsonify, redirect, url_for, request, session, flash
 import pymysql
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, time, timedelta
 import pytz
 import os
 import string
@@ -368,85 +369,90 @@ def instructor_dashboard():
                                subject_count=subject_count)
     else:
         return redirect(url_for('login'))
-
+    
 @app.route("/subjects/add", methods=["POST"])
 def add_subject():
+    # Log request initiation 📝
+    app.logger.info("🔄 Starting subject creation process...")
+    
+    # Authentication check 🔒
     if 'role' not in session or session['role'] != 'instructor':
+        app.logger.warning("⚠️ Unauthorized access attempt - Missing role or invalid credentials")
         return jsonify({"error": "Unauthorized"}), 403
-        
+    
+    # Parse incoming data 📨
+    app.logger.debug("📦 Parsing JSON payload...")
+    data = request.get_json()
+    
+    # Validate required fields ✅
+    required_fields = ['code', 'name', 'day', 'start_time', 'end_time', 'course', 'track']
+    missing = [f for f in required_fields if not data.get(f)]
+    
+    if missing:
+        app.logger.error("❌ Missing required fields: {}".format(", ".join(missing)))
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+    
+    # Database operations 🗄️
+    app.logger.debug("🔍 Connecting to database...")
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    
     try:
-        # Get form data from frontend
-        data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['code', 'name', 'schedule', 'course', 'track']
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return jsonify({
-                "error": f"Missing required fields: {', '.join(missing_fields)}"
-            }), 400
-            
-        code = data['code']
-        name = data['name']
-        schedule = data['schedule']  # Format: "Day Time"
-        course = data['course']
-        track = data['track']
-
-        
-        # Validate schedule format
-        schedule_parts = schedule.split(' ', 1)
-        if len(schedule_parts) != 2:
-            return jsonify({
-                "error": "Invalid schedule format. Must include day and time."
-            }), 400
-        
-        # Database operations
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Get instructor_id linked to user_id
-        cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", 
-                      (session['user_id'],))
+        # Get instructor ID 👨‍🏫
+        app.logger.debug("👥 Looking up instructor ID...")
+        cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", (session['user_id'],))
         instructor = cursor.fetchone()
         
         if not instructor:
+            app.logger.error("👋 Instructor not found for user_id: {}".format(session['user_id']))
             connection.close()
             return jsonify({"error": "Instructor not found"}), 404
-            
-        instructor_id = instructor['instructor_id']
         
-        # Add subject to database
+        # Insert subject 📚
+        app.logger.info("💾 Creating new subject...")
         cursor.execute("""
-            INSERT INTO subjects (code, name, description, schedule, instructor_id, course, track)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (code, name, data.get('description'), schedule, instructor_id, course, track))
-        #the one you just gave rn
-        cursor.execute("""
-            INSERT INTO subjects (code, name, description, schedule, instructor_id, course, track)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (code, name, data.get('description'), schedule, instructor_id, course, track))
+            INSERT INTO subjects (code, name, description, day, start_time, end_time, instructor_id, course, track)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['code'], data['name'], data.get('description'),
+            data['day'], data['start_time'], data['end_time'],
+            instructor['instructor_id'], data['course'], data['track']
+        ))
+        
+# Convert string to time objects
+        try:
+            start_time_obj = datetime.strptime(data['start_time'], "%H:%M").time()
+            end_time_obj = datetime.strptime(data['end_time'], "%H:%M").time()
+        except ValueError:
+            app.logger.error("❌ Invalid time format. Expected HH:MM.")
+            return jsonify({"error": "Time must be in HH:MM format"}), 400
 
+# Time constraints: 6:00 AM to 6:00 PM
+        if not (time(6, 0) <= start_time_obj <= time(18, 0)):
+            app.logger.warning("🚫 Start time out of bounds: {}".format(start_time_obj))
+            return jsonify({"error": "Start time must be between 6:00 AM and 6:00 PM"}), 400
 
+        if not (time(6, 0) <= end_time_obj <= time(18, 0)):
+            app.logger.warning("🚫 End time out of bounds: {}".format(end_time_obj))
+            return jsonify({"error": "End time must be between 6:00 AM and 6:00 PM"}), 400
+
+# Make sure end is after start
+        if end_time_obj <= start_time_obj:
+            app.logger.warning("⏱️ End time must be after start time.")
+            return jsonify({"error": "End time must be after start time"}), 400
+
+        # Commit changes 💾
+        app.logger.debug("💪 Committing changes to database...")
         connection.commit()
-        connection.close()
         
-        return jsonify({
-            "message": "Subject added successfully",
-            "subject": {
-            "code": code,
-            "name": name,
-            "schedule": schedule,
-            "description": data.get('description'),
-            "course": course,
-            "track": track
-            }
-        })
-    except Exception as e:
-        # Ensure connection is closed even if error occurs
-        if 'connection' in locals():
-            connection.close()
-            
-        return jsonify({"error": str(e)}), 500
+        # Success response 🎉
+        app.logger.info("✅ Subject created successfully!")
+        return jsonify({"message": "Subject added successfully!"})
+        
+    finally:
+        # Cleanup 🧹
+        app.logger.debug("🔩 Closing database connection...")
+        connection.close()
 
 @app.route("/subjects", methods=["GET"])
 def get_subjects():
@@ -458,7 +464,6 @@ def get_subjects():
     connection = get_db_connection()
     cursor = connection.cursor()
 
-    # Get instructor_id from user_id
     cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", (user_id,))
     instructor = cursor.fetchone()
 
@@ -466,18 +471,24 @@ def get_subjects():
         connection.close()
         return jsonify({"error": "Instructor not found"}), 404
 
-    instructor_id = instructor['instructor_id']
+    instructor_id = instructor['instructor_id']  # ✅ now safe
 
-    # Fetch subjects for this instructor
     cursor.execute("""
-        SELECT id, code, name, description, schedule, course, track
+        SELECT id, code, name, description, day, start_time, end_time, course, track
         FROM subjects
         WHERE instructor_id = %s
     """, (instructor_id,))
-    subjects = cursor.fetchall()
-    connection.close()
 
+    subjects = cursor.fetchall()
+    
+     # 🔁 Convert time fields to string manually
+    for subject in subjects:
+        subject['start_time'] = str(subject['start_time'])
+        subject['end_time'] = str(subject['end_time'])
+
+    connection.close()
     return jsonify(subjects)
+
 
 @app.route("/subjects/count", methods=["GET"])
 def count_subjects():
@@ -497,27 +508,40 @@ def count_subjects():
 
 @app.route("/subjects/<int:subject_id>", methods=["GET"])
 def get_subject(subject_id):
-    print(f"Fetching subject ID: {subject_id}")
-    connection = get_db_connection()
-    cursor = connection.cursor()
-    cursor.execute("SELECT id, code, name, description, schedule, course, track FROM subjects WHERE id = %s", (subject_id,))
-    subject = cursor.fetchone()
-    print(f"Fetched subject from DB: {subject}")
-    connection.close()
-
-    if not subject:
-        print("Subject not found, returning 404 JSON")
-        return jsonify({"error": "Subject not found"}), 404
-
-    return jsonify({
-    "id": subject["id"],
-    "code": subject["code"],
-    "name": subject["name"],
-    "description": subject["description"],
-    "schedule": subject["schedule"],
-    "course": subject["course"],
-    "track": subject["track"]
-})
+    # Log request initiation 📝
+    app.logger.info("🔍 Fetching subject details...")
+    
+    try:
+        # Database operations 🗄️
+        app.logger.debug("🔄 Connecting to database...")
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Query execution 🔍
+        app.logger.debug("🔎 Executing SELECT query...")
+        cursor.execute("""
+            SELECT id, code, name, description, day, start_time, end_time, course, track
+            FROM subjects WHERE id = %s
+        """, (subject_id,))
+        
+        subject = cursor.fetchone()
+        
+        if not subject:
+            app.logger.warning("⚠️ Subject not found: ID={}".format(subject_id))
+            return jsonify({"error": "Subject not found"}), 404
+        
+        # Data processing 📊
+        app.logger.debug("🔄 Processing time fields...")
+        subject['start_time'] = str(subject['start_time'])
+        subject['end_time'] = str(subject['end_time'])
+        
+        app.logger.info("✅ Subject fetched successfully!")
+        return jsonify(subject)
+        
+    finally:
+        # Cleanup 🧹
+        app.logger.debug("🔩 Closing database connection...")
+        connection.close()
 
 @app.route("/subjects/<int:subject_id>", methods=["PUT"])
 def update_subject(subject_id):
@@ -531,9 +555,12 @@ def update_subject(subject_id):
     code = data.get('code')
     name = data.get('name')
     description = data.get('description')
-    schedule = data.get('schedule')
+    day = data.get('day')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
     course = data.get('course')
     track = data.get('track')
+
 
 
     if not code or not name:
@@ -541,10 +568,11 @@ def update_subject(subject_id):
         return jsonify({"error": "Code and Name are required"}), 400
 
     cursor.execute("""
-        UPDATE subjects 
-        SET code = %s, name = %s, description = %s, schedule = %s, course = %s, track = %s
-        WHERE id = %s
-    """, (code, name, description, schedule, course, track, subject_id))
+    UPDATE subjects 
+    SET code = %s, name = %s, description = %s, day = %s, start_time = %s, end_time = %s, course = %s, track = %s
+    WHERE id = %s
+    """, (code, name, description, day, start_time, end_time, course, track, subject_id))
+
 
 
     connection.commit()
@@ -566,72 +594,186 @@ def delete_subject(subject_id):
 
     return jsonify({"message": "Subject deleted successfully."})
 
+@app.route("/instructor/subjects")
+def instructor_subjects():
+    if 'user_id' not in session or session.get('role') != 'instructor':
+        return redirect("/login")
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # Fetch instructor_id
+    cursor.execute("SELECT instructor_id FROM instructors WHERE user_id = %s", (session['user_id'],))
+    instructor = cursor.fetchone()
+
+    if not instructor:
+        connection.close()
+        return "Instructor not found", 404
+
+    # Fetch subjects
+    cursor.execute("""
+        SELECT id, code, name, course, track
+        FROM subjects
+        WHERE instructor_id = %s
+    """, (instructor['instructor_id'],))
+
+    subjects = cursor.fetchall()
+    connection.close()
+
+    return render_template("instructor_subjects.html", subjects=subjects)
+
+@app.route("/instructor/attendance/<int:subject_id>")
+def view_attendance(subject_id):
+    if 'user_id' not in session or session.get('role') != 'instructor':
+        return redirect("/login")
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # Fetch subject info
+    cursor.execute("SELECT name, code FROM subjects WHERE id = %s", (subject_id,))
+    subject = cursor.fetchone()
+
+    if not subject:
+        connection.close()
+        return "Subject not found", 404
+
+    # Fetch attendance for this subject
+    cursor.execute("""
+        SELECT students.firstname, students.lastname, attendance.date, attendance.time_in, attendance.status
+        FROM attendance
+        JOIN students ON attendance.student_id = students.user_id
+        WHERE attendance.subject_name = %s
+        ORDER BY attendance.date DESC, attendance.time_in DESC
+    """, (subject['name'],))  # Assumes subject_name is used in attendance
+
+    records = cursor.fetchall()
+    connection.close()
+
+    return render_template("instructor_attendance.html", subject=subject, records=records)
+
+
 #Students
+from flask import session, render_template, redirect
+from datetime import datetime, timedelta
+import pytz
+
 @app.route("/student_dashboard")
 def student_dashboard():
-    print("➡️ Request received for /student_dashboard")
     if 'user_id' not in session or session.get('role') != 'student':
-        print("🚫 Unauthorized access or user not logged in as student. Redirecting to login.")
-        return redirect(url_for('login'))
+        return redirect("/login")
 
     user_id = session['user_id']
+    print("➡️ Request received for /student_dashboard")
     print(f"👤 User ID from session: {user_id}")
+
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
         print("✅ Database connection established.")
 
         # Get student info
-        cursor.execute("""
-            SELECT u.name, u.school_id, s.firstname, s.lastname, s.course, s.track, u.email
-            FROM users u
-            JOIN students s ON u.id = s.user_id
-            WHERE u.id = %s
-        """, (user_id,))
+        cursor.execute("SELECT * FROM students WHERE user_id = %s", (user_id,))
         student = cursor.fetchone()
-
         if not student:
+            print("❌ Student not found.")
             connection.close()
-            print("⚠️ Student not found in the database.")
             return "Student not found", 404
-        else:
-            print(f"📚 Student data retrieved: {student['name']} ({student['school_id']})")
 
+        name = f"{student['firstname']} {student['lastname']}"
         course = student['course']
         track = student['track']
+        print(f"📚 Student data retrieved: {name} ({student['school_id']})")
         print(f"🎓 Course: {course}, Track: {track}")
 
-        # Get subjects matching course & track
+        # Get today's date and time
+        timezone = pytz.timezone("Asia/Manila")
+        now = datetime.now(timezone)
+        today = now.strftime('%A')
+        print(f"📅 Today is {today} ({now.strftime('%H:%M:%S')})")
+
+        # Get all subjects for student's course + track
         cursor.execute("""
-            SELECT name AS subject_name, schedule
+            SELECT name AS subject_name, day, start_time, end_time
             FROM subjects
             WHERE course = %s AND track = %s
         """, (course, track))
         subjects = cursor.fetchall()
 
-        if subjects:
-            print(f"📖 Found {len(subjects)} subjects for {course} - {track}.")
-            for subject in subjects:
-                print(f"   - {subject['subject_name']} ({subject['schedule']})")
-        else:
-            print("No subjects found for this course and track.")
+        today_subjects = []
+
+        for subj in subjects:
+            if subj['day'] != today or not subj['start_time'] or not subj['end_time']:
+                continue
+
+            start_time_raw = subj['start_time']
+
+            if isinstance(start_time_raw, timedelta):
+                start_time = (datetime.min + start_time_raw).time()
+            else:
+                start_time = start_time_raw
+
+            subject_start = datetime.combine(now.date(), start_time)
+            subject_start = timezone.localize(subject_start)
+
+            open_window = subject_start - timedelta(minutes=5)
+            close_window = subject_start + timedelta(minutes=5)
+            is_active = open_window <= now <= close_window
+
+
+            print(f"🧪 [{subj['subject_name']}] {subj['day']} {subj['start_time']}–{subj['end_time']} → "
+                  f"{'🟢 ACTIVE' if is_active else '⚪ upcoming'}")
+
+            today_subjects.append({
+                'subject_name': subj['subject_name'],
+                'day': subj['day'],
+                'start_time': str(subj['start_time']),
+                'end_time': str(subj['end_time']),
+                'is_active': is_active
+            })
+
+        today_subjects.sort(key=lambda s: s['start_time'])
+        print(f"📋 Showing {len(today_subjects)} subject(s) for today.")
 
         connection.close()
         print("🔒 Database connection closed.")
+        print("✅ Rendering student dashboard.\n")
 
-        print("✅ Rendering student dashboard.")
-        return render_template("dashboard.html",
-                               student_name=student['name'],
-                               student_id=student['school_id'],
-                               user=student,
-                               active_subjects=subjects)
+        return render_template("dashboard.html", user={'name': name}, subjects=today_subjects)
+
+
     except Exception as e:
         print(f"🔴 An error occurred: {e}")
-        if 'connection' in locals() and connection:
-            connection.close()
-            print("⚠️ Database connection closed due to error.")
-        return "An error occurred while processing your request.", 500
+        return "An error occurred while loading the dashboard.", 500
+
+#history
+@app.route("/student/attendance_history")
+def attendance_history():
+    if 'user_id' not in session or session.get('role') != 'student':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    user_id = session['user_id']
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT subject_name, DATE_FORMAT(time_in, '%%Y-%%m-%%d %%W %%h:%%i %%p') as time_in, status
+        FROM attendance
+        WHERE student_id = %s
+        ORDER BY time_in DESC
+    """, (user_id,))
+
+    history = cursor.fetchall()
+    connection.close()
+    return jsonify(history)
+
+
+#history
+
 #End Students
+
+
+
 @app.route('/logout', methods=["POST"])
 def logout():
     session.clear()  

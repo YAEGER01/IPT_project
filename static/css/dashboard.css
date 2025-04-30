@@ -271,6 +271,10 @@ body {
     line-height: 1.6;
 }
 
+.right-container li {
+    color: white;
+}
+
 /* para sa right side and left side and main */
 @media (max-width: 1024px) {
     .dashboard {

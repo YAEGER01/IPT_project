@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Subjects</title>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-gray: #F2F2F7;
+            --ios-dark-gray: #1C1C1E;
+            --ios-light-gray: #E5E5EA;
+            --ios-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--ios-gray);
+            color: var(--ios-dark-gray);
+        }
+
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--ios-light-gray);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .header-button {
+            background: none;
+            border: none;
+            color: var(--ios-blue);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .header-button:hover {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .nav {
+            display: flex;
+            padding: 10px 20px;
+            background-color: white;
+            border-bottom: 1px solid var(--ios-light-gray);
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--ios-blue);
+        }
+
+        .nav-item.active {
+            background-color: var(--ios-blue);
+            color: white;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .subject-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .subject-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--ios-card-shadow);
+            transition: transform 0.2s ease;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .subject-card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .subject-code {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .subject-name {
+            font-size: 15px;
+            color: #636366;
+            margin-bottom: 8px;
+        }
+
+        .subject-meta {
+            font-size: 13px;
+            color: #8E8E93;
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8E8E93;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Uploaded Subjects</h1>
+        <div class="header-actions">
+            <a href="/instructor_dashboard" class="header-button" style="text-decoration: none;">Home</a>
+            <form action="/logout" method="POST" style="display:inline;">
+                <button type="submit" class="header-button">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if subjects %}
+        <div class="subject-list">
+            {% for subject in subjects %}
+            <div class="subject-card">
+                <a href="{{ url_for('view_attendance', subject_id=subject.id) }}">
+                    <div class="subject-code">{{ subject.code }}</div>
+                    <div class="subject-name">{{ subject.name }}</div>
+                    <div class="subject-meta">
+                        <span>{{ subject.course }}</span>
+                        <span>&bull;</span>
+                        <span>{{ subject.track }}</span>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">No subjects found.</div>
+        {% endif %}
+    </div>
+</body>
+
+</html>
