@@ -176,18 +176,12 @@
         padding-right: 44px;
     }
 
-    .eye-icon {
+    .toggle-password {
         position: absolute;
-        top: 43%;
+        top: 50%;
         right: 12px;
         transform: translateY(-50%);
-        width: 24px;
-        height: 24px;
         cursor: pointer;
-        color: #333;
-        transition: color 0.3s ease;
-    }
-
-    .eye-icon:hover {
-        color: #d056ef;
+        user-select: none;
+        z-index: 2;
     }
