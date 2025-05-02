@@ -41,8 +41,8 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'programmingproject06@gmail.com'
 app.config['MAIL_PASSWORD'] = 'udci zrfz hujo fzvz'
 app.config['SESSION_PROTECTION'] = 'strong'
-app.config['RECAPTCHA_SITE_KEY'] = '6Lf2PSsrAAAAAPLfqDdyUmF3GNEY8AFOC9aNyNe2'
-app.config['RECAPTCHA_SECRET_KEY'] = '6Lf2PSsrAAAAAHvsT2z1r2D46h3SRXvp_kj6zkvP'
+app.config['RECAPTCHA_SITE_KEY'] = '6LdG2zEpAAAAALPtgxEqR8kE5MBM7PqZwx0GCw6C'
+app.config['RECAPTCHA_SECRET_KEY'] = '6LdG2zEpAAAAAFO7o8yU9gOZQHJTR7_1fYH9hLqD'
 
 
 def get_db_connection():
