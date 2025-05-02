@@ -4,3 +4,6 @@ werkzeug
 pytz
 flake8
 pytest
+python-magic
+requests
+sendgrid

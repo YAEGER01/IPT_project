@@ -7,19 +7,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/signup.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script>
-        // mag Generate and mag store a unique device token
-        function generateDeviceToken() {
-            let token = localStorage.getItem('device_token');
-            if (!token) {
-                token = crypto.randomUUID();
-                localStorage.setItem('device_token', token);
-            }
-            document.getElementById('device_token').value = token;
-        }
-
-        window.onload = generateDeviceToken;
-
-
         function validatePassword() {
             const password = document.querySelector('input[name="password"]').value;
             const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
@@ -97,14 +84,13 @@
                 </div>
                 <span id="confirm-password-error"></span>
             </div>
+
             <div class="form-group">
                 <label>Role:</label>
                 <select name="role" required>
                     <option value="Student">Student</option>
                 </select>
             </div>
-
-            <input type="hidden" name="device_token" id="device_token">
 
             <button class="btn" type="submit" disabled>Sign Up</button>
         </form>
@@ -138,20 +124,6 @@
             }
         });
     </script>
-
-    <script>
-        document.querySelectorAll('.toggle-password').forEach(icon => {
-            icon.addEventListener('click', function () {
-                const targetInput = document.getElementById(this.getAttribute('data-target'));
-                const isPassword = targetInput.getAttribute('type') === 'password';
-
-                targetInput.setAttribute('type', isPassword ? 'text' : 'password');
-                this.classList.toggle('fa-eye-slash');
-                this.classList.toggle('fa-eye');
-            });
-        });
-    </script>
-
 </body>
 
 </html>
