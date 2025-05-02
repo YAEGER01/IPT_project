@@ -23,7 +23,7 @@ import sendgrid
 from sendgrid.helpers.mail import Mail, Email, To, Content
 import requests
 import hashlib
-import mariadb
+# MariaDB import removed since we're using pymysql
 
 app = Flask(__name__)
 app.secret_key = '77ddb26acf05b21b43c1f8cfda7062dc'  # wag i delete
