@@ -1,8 +1,8 @@
 import hashlib
 import secrets
 
-def generate_scrypt_hash(password, n=16384, r=8, p=1):s
-"""
+def generate_scrypt_hash(password, n=16384, r=8, p=1):
+    """
     Generate a scrypt hash with custom parameters.
 
     :param password: The password to hash (string)
@@ -12,10 +12,10 @@ def generate_scrypt_hash(password, n=16384, r=8, p=1):s
     :return: The scrypt hash as a formatted string
     """
     # Generate a secure random salt
-salt = secrets.token_urlsafe(16)
-    
+    salt = secrets.token_urlsafe(16)
+
     # Use the scrypt hashing algorithm
-hashed_password = hashlib.scrypt(
+    hashed_password = hashlib.scrypt(
         password.encode(),
         salt=salt.encode(),
         n=n,
@@ -23,9 +23,10 @@ hashed_password = hashlib.scrypt(
         p=p,
         maxmem=64 * 1024 * 1024  # Adjust max memory (e.g., 64 MiB)
     )
-    
+
     # Format the output
-return f"scrypt:{n}:{r}:{p}${salt}${hashed_password.hex()}"
+    return f"scrypt:{n}:{r}:{p}${salt}${hashed_password.hex()}"
+
 if __name__ == "__main__":
     password = input("Enter your password: ")
     hashed_password = generate_scrypt_hash(password)
