@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login |</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-    <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 
 <body>
@@ -23,15 +23,12 @@
             <label for="password">Password</label>
             <div class="password-wrapper">
                 <input type="password" id="password" name="password" placeholder="Enter your password" required />
-                <!-- Toggle password icons here (unchanged) -->
-                <!-- ... -->
+                <i class="toggle-password" onclick="togglePassword()">👁️</i>
             </div>
 
-            <!-- reCAPTCHA container (must have ID) -->
-            <div id="invisible-recaptcha"></div>
+            <div class="g-recaptcha" data-sitekey="{{ config['RECAPTCHA_SITE_KEY'] }}"></div>
 
-            <!-- Button triggers CAPTCHA -->
-            <button class="btn" type="button" onclick="submitWithCaptcha()">Login</button>
+            <button class="btn" type="submit">Login</button>
 
             <div class="form-footer">
                 <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
@@ -40,48 +37,16 @@
     </div>
 
     <script>
-        let widgetId;
-
-        function onSubmit(token) {
-            document.getElementById("login-form").submit();
-        }
-
-        function submitWithCaptcha() {
-            grecaptcha.execute(widgetId);
-        }
-
-        function onLoadCallback() {
-            widgetId = grecaptcha.render('invisible-recaptcha', {
-                'sitekey': '6LdG2zEpAAAAALPtgxEqR8kE5MBM7PqZwx0GCw6C',
-                'callback': onSubmit,
-                'size': 'invisible'
-            });
-        }
-
-        // Retry if grecaptcha not ready
-        window.onload = function () {
-            if (typeof grecaptcha !== 'undefined') {
-                onLoadCallback();
-            } else {
-                setTimeout(onLoadCallback, 1000);
-            }
-        };
-    </script>
-
-    <script>
         function togglePassword() {
             const passwordInput = document.getElementById("password");
-            const showEye = document.getElementById("showEye");
-            const hideEye = document.getElementById("hideEye");
+            const toggleBtn = document.querySelector(".toggle-password");
 
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
-                showEye.style.display = "none";
-                hideEye.style.display = "block";
+                toggleBtn.textContent = "🔒";
             } else {
                 passwordInput.type = "password";
-                showEye.style.display = "block";
-                hideEye.style.display = "none";
+                toggleBtn.textContent = "👁️";
             }
         }
     </script>
