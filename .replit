@@ -22,5 +22,4 @@ args = "python app.py"
 
 [[ports]]
 localPort = 5000
-externalPort = 3000
-exposeLocalhost = true
+externalPort = 5000
