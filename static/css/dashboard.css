@@ -639,3 +639,10 @@ button.upcoming {
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+.subject-schedule {
+    font-size: 0.8em;
+    opacity: 0.9;
+    display: block;
+    margin-top: 5px;
+}

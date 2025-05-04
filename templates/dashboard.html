@@ -117,6 +117,8 @@
                                     {% if subject.attended_on_time or subject.missed %}disabled{% endif %}
                                 >
                                     {{ subject.subject_name }}
+                                    <br>
+                                    <span class="subject-schedule">{{ subject.day }} | {{ subject.start_time }} - {{ subject.end_time }}</span>
                                 </button>
                             {% endfor %}
                         {% else %}
