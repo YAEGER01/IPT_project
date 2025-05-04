@@ -32,6 +32,27 @@ db_config = {
     'host': 'db4free.net',
     'user': 'rechner_hahn',
     'password': 'sulasok_tv',
+
+# Create devices table if it doesn't exist
+def create_devices_table():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS devices (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            device_token VARCHAR(255) NOT NULL,
+            fingerprint VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+    connection.commit()
+    connection.close()
+
+# Call this when app starts
+create_devices_table()
+
     'database': 'ipt_project',
 }
 
@@ -85,25 +106,66 @@ def index():
     return render_template("index.html")
 
 
+def generate_device_fingerprint():
+    user_agent = request.headers.get('User-Agent', '')
+    ip = request.remote_addr
+    platform = request.user_agent.platform
+    browser = request.user_agent.browser
+    # Combine these values to create a unique fingerprint
+    fingerprint_data = f"{user_agent}|{ip}|{platform}|{browser}"
+    return hashlib.sha256(fingerprint_data.encode()).hexdigest()
+
+def generate_device_token():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        # Step 1: Verify reCAPTCHA
-        recaptcha_response = request.form.get('g-recaptcha-response')
-        secret_key = app.config['RECAPTCHA_SECRET_KEY']
-        verify_url = "https://www.google.com/recaptcha/api/siteverify"
-        payload = {'secret': secret_key, 'response': recaptcha_response}
-        r = requests.post(verify_url, data=payload)
-        result = r.json()
-
-        if not result.get("success"):
-            return render_template(
-                "login.html",
-                error="reCAPTCHA verification failed. Please try again.")
-
-        # Step 2: Handle login logic
         school_id = request.form['school_id']
         password = request.form['password']
+        
+        # Generate device fingerprint
+        device_fingerprint = generate_device_fingerprint()
+        
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # First check if user exists
+        cursor.execute("SELECT * FROM users WHERE school_id = %s", (school_id,))
+        user = cursor.fetchone()
+        
+        if user and check_password_hash(user['password'], password):
+            # Check if user has any registered devices
+            cursor.execute("SELECT * FROM devices WHERE user_id = %s", (user['id'],))
+            device = cursor.fetchone()
+            
+            if device:
+                # Compare fingerprints
+                if device['fingerprint'] != device_fingerprint:
+                    connection.close()
+                    return render_template("login.html", error="Unrecognized device. Access denied.")
+            else:
+                # First time login - register device
+                device_token = generate_device_token()
+                cursor.execute(
+                    "INSERT INTO devices (user_id, device_token, fingerprint) VALUES (%s, %s, %s)",
+                    (user['id'], device_token, device_fingerprint)
+                )
+                connection.commit()
+            
+            # Now verify reCAPTCHA
+            recaptcha_response = request.form.get('g-recaptcha-response')
+            secret_key = app.config['RECAPTCHA_SECRET_KEY']
+            verify_url = "https://www.google.com/recaptcha/api/siteverify"
+            payload = {'secret': secret_key, 'response': recaptcha_response}
+            r = requests.post(verify_url, data=payload)
+            result = r.json()
+
+            if not result.get("success"):
+                connection.close()
+                return render_template(
+                    "login.html",
+                    error="reCAPTCHA verification failed. Please try again.")
 
         connection = get_db_connection()
         cursor = connection.cursor()
