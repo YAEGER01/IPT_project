@@ -29,13 +29,6 @@
                 opacity: 0.8;
             }
 
-            .subject.inactive {
-                background-color: #d9534f; /* red */
-                color: white;
-                font-weight: bold;
-                cursor: not-allowed;
-                opacity: 0.8;
-            }
         </style>
 
         <!-- FOR AREA NG MGA SCRIPTS NG PROJECT -->
@@ -517,8 +510,6 @@
                     const isWithinWindow =
                         now >= openWindow && now <= closeWindow;
 
-                    const isTimeExceeded = now > closeWindow;
-
                     console.log(
                         `📚 ${subjectName}: ${startTimeStr} → window: ${openWindow.toLocaleTimeString()} to ${closeWindow.toLocaleTimeString()}`,
                     );
@@ -530,14 +521,9 @@
                     if (isWithinWindow && !alreadyAttended) {
                         button.disabled = false;
                         button.classList.add("active");
-                        button.classList.remove("inactive");
-                    } else if (isTimeExceeded && !alreadyAttended) {
-                        button.disabled = true;
-                        button.classList.add("inactive");
-                        button.classList.remove("active");
                     } else {
                         button.disabled = true;
-                        button.classList.remove("active", "inactive");
+                        button.classList.remove("active");
                     }
                 });
             }
