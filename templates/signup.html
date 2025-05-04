@@ -113,6 +113,7 @@
                         <i
                             class="fa-solid fa-eye-slash toggle-password"
                             data-target="password"
+                            onclick="togglePasswordVisibility('password')"
                         ></i>
                     </div>
                 </div>
@@ -132,6 +133,7 @@
                         <i
                             class="fa-solid fa-eye-slash toggle-password"
                             data-target="confirm_password"
+                            onclick="togglePasswordVisibility('confirm_password')"
                         ></i>
                     </div>
                     <span id="confirm-password-error"></span>
@@ -155,6 +157,21 @@
         </div>
 
         <script>
+            function togglePasswordVisibility(target) {
+                const passwordInput = document.getElementById(target);
+                const icon = document.querySelector(`[data-target='${target}']`);
+
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    icon.classList.remove("fa-eye-slash");
+                    icon.classList.add("fa-eye");
+                } else {
+                    passwordInput.type = "password";
+                    icon.classList.remove("fa-eye");
+                    icon.classList.add("fa-eye-slash");
+                }
+            }
+            
             const coursesData = {
                 BSIT: ["WMAD", "NS", "BPO", "BA", "AI", "Cloud Computing"],
                 BSCS: [
