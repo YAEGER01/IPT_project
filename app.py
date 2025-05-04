@@ -296,26 +296,35 @@ def verify_otp():
     if request.method == "POST":
         user_otp = request.form["otp"]
         if user_otp == session.get("otp"):
-            connection = get_db_connection()
-            cursor = connection.cursor()
+            try:
+                connection = get_db_connection()
+                cursor = connection.cursor()
+                
+                # Start transaction
+                cursor.execute("START TRANSACTION")
+                
+                email = session['email']
+                role = session['role']
+                school_id = session['school_id']
+                hashed_password = generate_password_hash(session['password'])
 
-            email = session['email']
-            role = session['role']
-            school_id = session['school_id']
-            hashed_password = generate_password_hash(session['password'])
+                if role == 'Student':
+                    firstname = session['firstname']
+                    lastname = session['lastname']
+                    name = f"{firstname} {lastname}"
+                else:
+                    name = session['name']
 
-            if role == 'Student':
-                firstname = session['firstname']
-                lastname = session['lastname']
-                name = f"{firstname} {lastname}"
-            else:
-                name = session['name']
+                # Check if user already exists
+                cursor.execute("SELECT id FROM users WHERE email = %s OR school_id = %s", (email, school_id))
+                if cursor.fetchone():
+                    connection.rollback()
+                    return "User already exists", 400
 
-            cursor.execute(
-                "INSERT INTO users (name, password, role, school_id, email) VALUES (%s, %s, %s, %s, %s)",
-                (name, hashed_password, role, school_id, email))
-            connection.commit()
-            user_id = cursor.lastrowid
+                cursor.execute(
+                    "INSERT INTO users (name, password, role, school_id, email) VALUES (%s, %s, %s, %s, %s)",
+                    (name, hashed_password, role, school_id, email))
+                user_id = cursor.lastrowid
 
             # Insert into role-specific tables
             if role == 'Student':
@@ -346,14 +355,17 @@ def verify_otp():
                     (user_id, school_id))
 
             connection.commit()
-            connection.close()
-
-            # Clear session data (optional but recommended)
-            session.clear()
-
-            return redirect(url_for('login'))
+                # Clear session data after successful commit
+                session.clear()
+                return redirect(url_for('login'))
+                
+            except Exception as e:
+                connection.rollback()
+                return f"An error occurred: {str(e)}", 500
+            finally:
+                connection.close()
         else:
-            return "Invalid OTP", 400
+            return render_template("verify_otp.html", error="Invalid OTP")
 
     return render_template("verify_otp.html")
 
