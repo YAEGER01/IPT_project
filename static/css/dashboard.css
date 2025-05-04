@@ -621,13 +621,12 @@ button.upcoming {
 }
 
 .subject.attended-on-time {
-    background-color: #28a745; /* green */
+    background-color: green;
     color: white;
-    font-weight: bold;
 }
 
 .subject.missed-subject {
-    background-color: #dc3545; /* red */
+    background-color: #d9534f; /* red */
     color: white;
     font-weight: bold;
     cursor: not-allowed;
@@ -635,16 +634,10 @@ button.upcoming {
 }
 
 .subject.inactive {
-    background-color: #dc3545; /* red */
+    background-color: #d9534f; /* red */
     color: white;
     opacity: 0.7;
     cursor: not-allowed;
-}
-
-.subject.active {
-    background-color: #ffc107; /* yellow */
-    color: black;
-    font-weight: bold;
 }
 
 .subject-schedule {
