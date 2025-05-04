@@ -107,14 +107,51 @@ def login():
 
         connection = get_db_connection()
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE school_id = %s",
-                       (school_id, ))
+        
+        # Check user credentials
+        cursor.execute("SELECT * FROM users WHERE school_id = %s", (school_id,))
         user = cursor.fetchone()
-        connection.close()
 
         if user and check_password_hash(user['password'], password):
+            # Generate device fingerprint
+            current_fingerprint = generate_device_fingerprint(request)
+            
+            # Check if device is registered
+            cursor.execute(
+                "SELECT * FROM devices WHERE user_id = %s AND fingerprint = %s",
+                (user['id'], current_fingerprint)
+            )
+            device = cursor.fetchone()
+
+            if not device:
+                # Check if this is the first login
+                cursor.execute(
+                    "SELECT COUNT(*) as count FROM devices WHERE user_id = %s",
+                    (user['id'],)
+                )
+                device_count = cursor.fetchone()['count']
+
+                if device_count > 0:
+                    connection.close()
+                    return render_template(
+                        "login.html",
+                        error="Unauthorized device. Please use your registered device."
+                    )
+
+                # First login - register device
+                device_token = generate_device_token()
+                cursor.execute(
+                    """
+                    INSERT INTO devices (user_id, device_token, fingerprint)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (user['id'], device_token, current_fingerprint)
+                )
+                connection.commit()
+
             session['user_id'] = user['id']
             session['role'] = user['role']
+            connection.close()
 
             if user['role'] == 'admin':
                 return redirect(url_for('admin_dashboard'))
@@ -123,6 +160,7 @@ def login():
             else:
                 return redirect(url_for('student_dashboard'))
         else:
+            connection.close()
             return render_template("login.html",
                                    error="Invalid login credentials")
 
