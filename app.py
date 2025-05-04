@@ -78,9 +78,27 @@ def send_otp_email(user_email, otp):
 def index():
     return render_template("index.html")
 
+def generate_device_fingerprint():
+    """Generate device fingerprint from request headers"""
+    user_agent = request.headers.get('User-Agent', '')
+    platform = request.headers.get('Sec-Ch-Ua-Platform', '')
+    mobile = request.headers.get('Sec-Ch-Ua-Mobile', '')
+    fingerprint_data = f"{user_agent}{platform}{mobile}"
+    return hashlib.sha256(fingerprint_data.encode()).hexdigest()
+
+def generate_device_token():
+    """Generate unique device token"""
+    random_str = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+    timestamp = str(datetime.now().timestamp())
+    return hashlib.sha256(f"{random_str}{timestamp}".encode()).hexdigest()
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        # Get device info first
+        device_fingerprint = generate_device_fingerprint()
+        device_token = generate_device_token()
+
         # Step 1: Verify reCAPTCHA
         recaptcha_response = request.form.get('g-recaptcha-response')
         secret_key = app.config['RECAPTCHA_SECRET_KEY']
@@ -106,8 +124,33 @@ def login():
         connection.close()
 
         if user and check_password_hash(user['password'], password):
+            # Check device binding
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            
+            # Check if user has a registered device
+            cursor.execute("SELECT device_token, fingerprint FROM devices WHERE user_id = %s", (user['id'],))
+            device = cursor.fetchone()
+            
+            if device:
+                # Verify device fingerprint matches
+                if device['fingerprint'] != device_fingerprint:
+                    connection.close()
+                    return render_template("login.html", error="Access denied: Unrecognized device")
+            else:
+                # First time login - register device
+                cursor.execute(
+                    "INSERT INTO devices (user_id, device_token, fingerprint) VALUES (%s, %s, %s)",
+                    (user['id'], device_token, device_fingerprint)
+                )
+                connection.commit()
+            
+            connection.close()
+            
+            # Proceed with login
             session['user_id'] = user['id']
             session['role'] = user['role']
+            session['device_token'] = device_token
 
             if user['role'] == 'admin':
                 return redirect(url_for('admin_dashboard'))
