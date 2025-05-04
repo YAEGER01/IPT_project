@@ -14,6 +14,25 @@ body {
     font-family: 'Roboto', sans-serif;
 }
 
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-container input {
+    padding-right: 40px; /* Adjust space to make room for the icon */
+    width: 100%;
+}
+
+.password-container i {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2rem; /* Adjust the size of the icon */
+}
+
 .container {
     width: 95%;
     max-width: 1600px;
@@ -231,7 +250,7 @@ body {
 
 .subject {
     padding: 15px 25px;
-    background: #d056ef;
+    background: #f0ad4e;
     color: white;
     border-radius: 5px;
     text-align: center;
