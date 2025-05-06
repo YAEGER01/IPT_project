@@ -59,7 +59,7 @@ def send_otp_email(user_email, otp):
     print("📤 Preparing to send OTP email via SendGrid...")
     sg = sendgrid.SendGridAPIClient(
         api_key=
-        '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'
+        'SG API KEY'
     )
 
     from_email = Email("programmingproject06@gmail.com")
