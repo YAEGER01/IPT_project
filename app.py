@@ -889,7 +889,7 @@ from datetime import datetime, timedelta
 import pytz
 
 
-@app.route("/student_dashboard", methods=["GET", "POST"])
+@app.route("/dashboard", methods=["GET", "POST"])
 def student_dashboard():
     if 'user_id' not in session or session.get('role') != 'student':
         return redirect("/login")
@@ -909,8 +909,7 @@ def student_dashboard():
             FROM students 
             JOIN users ON students.user_id = users.id 
             WHERE students.user_id = %s
-        """, (user_id, ))
-
+            """, (user_id, ))
         student = cursor.fetchone()
         if not student:
             print("❌ Student not found.")
@@ -931,14 +930,20 @@ def student_dashboard():
 
         print(f"📅 Today is {today} ({now.strftime('%H:%M:%S')})")
 
-        # Fetch subjects for the student's course & track
+        # Fetch subjects for the student's course & track, including attendance state
         cursor.execute(
             """
-            SELECT name AS subject_name, day, start_time, end_time
-            FROM subjects
-            WHERE course = %s AND track = %s
-        """, (course, track))
+            SELECT s.name AS subject_name, s.day, s.start_time, s.end_time,
+                   CASE WHEN a.student_id IS NOT NULL THEN TRUE ELSE FALSE END AS attended_on_time,
+                   a.status AS attendance_status
+            FROM subjects s
+            LEFT JOIN attendance a
+            ON s.name = a.subject_name AND a.student_id = %s AND a.date = CURDATE()
+            WHERE s.course = %s AND s.track = %s
+            """, (user_id, course, track))
         subjects = cursor.fetchall()
+
+        print(f"📋 Subjects fetched: {subjects}")
 
         today_subjects = []
 
@@ -948,34 +953,39 @@ def student_dashboard():
                 continue
 
             start_time_raw = subj['start_time']
-
-            if isinstance(start_time_raw, timedelta):
-                start_time = (datetime.min + start_time_raw).time()
-            else:
-                start_time = start_time_raw
+            start_time = datetime.strptime(str(start_time_raw),
+                                           "%H:%M:%S").time()
 
             # Ensure subject_start is properly localized
-            subject_start = datetime.combine(now.date(), start_time)
+            subject_start = timezone.localize(
+                datetime.combine(now.date(), start_time))
 
-            if subject_start.tzinfo is None:
-                subject_start = timezone.localize(subject_start)
-
-            open_window = subject_start - timedelta(minutes=5)
-            close_window = subject_start + timedelta(minutes=5)
+            open_window = subject_start - timedelta(minutes=2)
+            close_window = subject_start + timedelta(minutes=2)
 
             is_active = open_window <= now <= close_window
-
-            print(
-                f"🧪 [{subj['subject_name']}] {subj['day']} {subj['start_time']}–{subj['end_time']} → "
-                f"{'🟢 ACTIVE' if is_active else '⚪ upcoming'}")
+            is_missed = now > close_window and not subj['attended_on_time']
 
             today_subjects.append({
-                'subject_name': subj['subject_name'],
-                'day': subj['day'],
-                'start_time': str(subj['start_time']),
-                'end_time': str(subj['end_time']),
-                'is_active': is_active
+                'subject_name':
+                subj['subject_name'],
+                'day':
+                subj['day'],
+                'start_time':
+                str(subj['start_time']),
+                'end_time':
+                str(subj['end_time']),
+                'is_active':
+                is_active,
+                'is_missed':
+                is_missed,
+                'attended_on_time':
+                subj['attended_on_time'],
+                'attendance_status':
+                subj['attendance_status']
             })
+
+        print(f"📋 Processed subjects for today: {today_subjects}")
 
         today_subjects.sort(key=lambda s: s['start_time'])
         print(f"📋 Showing {len(today_subjects)} subject(s) for today.")
@@ -1051,7 +1061,6 @@ import logging
 
 @app.route('/mark_attendance', methods=['POST'])
 def mark_attendance():
-
     if 'user_id' not in session or session['role'] != 'student':
         logging.warning("Unauthorized access attempt.")
         return jsonify({
@@ -1067,95 +1076,63 @@ def mark_attendance():
     student_id = session['user_id']
     now = datetime.now(pytz.timezone('Asia/Manila'))
     date_today = now.strftime('%Y-%m-%d')
-    time_now = now.strftime('%Y-%m-%d %H:%M:%S')
-    current_hour = now.hour + now.minute / 60
+    time_now = now.strftime('%H:%M:%S')
 
     try:
         conn = get_db_connection()
-        if not conn:
-            logging.error("Failed to connect to the database.")
-            return jsonify({
-                "status": "error",
-                "message": "Database connection failed."
-            })
-
         cursor = conn.cursor()
 
         logging.info(
             f"Checking if attendance for {subject} has already been marked today."
         )
 
+        # Check if attendance already exists
         cursor.execute(
-            """ 
+            """
             SELECT time_in, status FROM attendance
             WHERE student_id = %s AND subject_name = %s AND date = %s
-        """, (student_id, subject, date_today))
-
+            """, (student_id, subject, date_today))
         result = cursor.fetchone()
 
         if result:
-            time_in = result[0]
-            status = result[1]
+            time_in = result['time_in']
+            status = result['status']
             logging.info(f"Attendance already marked with status: {status}.")
 
-            if current_hour > time_in.hour + time_in.minute / 60:
-                if status != "late":
-                    cursor.execute(
-                        """ 
-                        UPDATE attendance
-                        SET status = 'late'
-                        WHERE student_id = %s AND subject_name = %s AND date = %s
+            # Update status to 'late' if applicable
+            if status != "late" and now.time() > datetime.strptime(
+                    str(time_in), "%H:%M:%S").time():
+                cursor.execute(
+                    """
+                    UPDATE attendance
+                    SET status = 'late'
+                    WHERE student_id = %s AND subject_name = %s AND date = %s
                     """, (student_id, subject, date_today))
-                    conn.commit()
-                    logging.info("Updated attendance status to 'late'.")
-                return jsonify({
-                    "status":
-                    "success",
-                    "message":
-                    f"Attendance already marked for {subject} today, but class has ended.",
-                    "attendance_status":
-                    "late",
-                    "attendance_marked":
-                    True,
-                    "student_list":
-                    get_attendance_list(cursor, subject, date_today)
-                })
+                conn.commit()
+                logging.info("Updated attendance status to 'late'.")
+            return jsonify({
+                "status": "success",
+                "message": f"Attendance already marked for {subject} today.",
+                "attendance_status": status,
+                "attendance_marked": True
+            })
 
+        # Insert new attendance record
         logging.info(
             f"Inserting attendance: student_id={student_id}, subject={subject}, date={date_today}, time_in={time_now}"
         )
         cursor.execute(
-            """ 
-            INSERT INTO attendance (student_id, subject_name, date, time_in)
-            VALUES (%s, %s, %s, %s)
-        """, (student_id, subject, date_today, time_now))
+            """
+            INSERT INTO attendance (student_id, subject_name, date, time_in, status)
+            VALUES (%s, %s, %s, %s, %s)
+            """, (student_id, subject, date_today, time_now, 'on_time'))
         conn.commit()
 
-        cursor.execute(
-            """ 
-            SELECT * FROM attendance WHERE student_id = %s AND subject_name = %s AND date = %s
-        """, (student_id, subject, date_today))
-        result = cursor.fetchone()
-
-        if result:
-            logging.info(
-                f"Attendance successfully inserted into database: {result}")
-        else:
-            logging.error(
-                f"Failed to find inserted attendance for student_id={student_id}, subject={subject}"
-            )
-
         return jsonify({
-            "status":
-            "success",
-            "message":
-            f"Attendance marked for {subject}",
-            "attendance_status":
-            "on_time",
-            "attendance_marked":
-            True,
-            "student_list":
-            get_attendance_list(cursor, subject, date_today)
+            "status": "success",
+            "message": f"Attendance marked for {subject}",
+            "attendance_status": "on_time",
+            "attendance_marked": True
         })
 
     except Exception as e:
@@ -1166,10 +1143,8 @@ def mark_attendance():
         })
 
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
 
 
 def get_attendance_list(cursor, subject, date_today):
